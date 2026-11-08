@@ -1,176 +1,192 @@
 # ui/library_page.py
-"""Страница «Библиотека»: список видео + добавление/удаление/воспроизведение."""
-
-from __future__ import annotations
+import os
 from pathlib import Path
-
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QUrl
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
-    QListWidget, QListWidgetItem, QFileDialog, QMenu, QMessageBox
+    QListWidget, QListWidgetItem, QFileDialog, QMenu, QMessageBox, QLineEdit
 )
+from PySide6.QtGui import QPixmap, QIcon
+from PySide6.QtMultimedia import QMediaPlayer, QVideoSink, QVideoFrame
 
 from core.i18n import tr, translator
 from core.settings import settings
 
-
 VIDEO_EXTS = {".mp4", ".mkv", ".avi", ".mov", ".webm", ".m4v", ".flv", ".wmv", ".ts"}
 
-
 class LibraryPage(QWidget):
-    """Эмитит playRequested(path) при двойном клике / контекстном «Воспроизвести»."""
-
     playRequested = Signal(str)
+    playAllRequested = Signal(list)
 
     def __init__(self):
         super().__init__()
-        self._paths: list[str] = settings().get_library()
+        self._items_data = {} # path -> {tags, name}
+        self._load_data()
         self._build_ui()
         self._refresh()
-
         translator().languageChanged.connect(self.retranslate)
+        self.setAcceptDrops(True)
 
-    # ---------- UI ----------
+    def _load_data(self):
+        raw = settings().get_library()
+        self._paths = []
+        for item in raw:
+            if isinstance(item, dict):
+                path = item.get("path")
+                tags = item.get("tags", "")
+            else:
+                path = item
+                tags = ""
+            if path and Path(path).exists():
+                self._paths.append(path)
+                self._items_data[path] = {"tags": tags}
+        settings().set_library([{"path": p, "tags": self._items_data[p]["tags"]} for p in self._paths])
+
     def _build_ui(self):
         root = QVBoxLayout(self)
         root.setContentsMargins(24, 20, 24, 20)
         root.setSpacing(12)
 
-        # header row
         header = QHBoxLayout()
         self._title = QLabel(tr("library.title"))
         self._title.setStyleSheet("font-size:20px; font-weight:700; color:#F5F5F7;")
         header.addWidget(self._title)
-        header.addStretch()
+        
+        self.search_bar = QLineEdit()
+        self.search_bar.setPlaceholderText("Поиск по имени/тегу...")
+        self.search_bar.setStyleSheet("background:#1F1F26; border:1px solid #2A2A33; border-radius:8px; padding:6px;")
+        self.search_bar.textChanged.connect(self._filter_list)
+        header.addWidget(self.search_bar, 1)
 
         self.btn_add = QPushButton(tr("library.add"))
         self.btn_add.setObjectName("CtrlBtn")
-        self.btn_add.setCursor(Qt.PointingHandCursor)
         self.btn_add.clicked.connect(self._add_files)
+        header.addWidget(self.btn_add)
+
+        self.btn_play_all = QPushButton("▶ Играть всё")
+        self.btn_play_all.setObjectName("CtrlBtn")
+        self.btn_play_all.clicked.connect(self._play_all)
+        header.addWidget(self.btn_play_all)
 
         self.btn_clear = QPushButton(tr("library.clear"))
         self.btn_clear.setObjectName("CtrlBtn")
-        self.btn_clear.setCursor(Qt.PointingHandCursor)
         self.btn_clear.clicked.connect(self._clear_all)
-
-        header.addWidget(self.btn_add)
         header.addWidget(self.btn_clear)
         root.addLayout(header)
 
-        # hint
-        self._hint = QLabel(tr("library.play_hint"))
-        self._hint.setStyleSheet("color:#5A5A66; font-size:12px;")
-        root.addWidget(self._hint)
-
-        # список
         self.list = QListWidget()
         self.list.setStyleSheet("""
-            QListWidget {
-                background:#17171C; border:1px solid #2A2A33;
-                border-radius:12px; padding:6px;
-            }
-            QListWidget::item {
-                padding:10px 12px; border-radius:8px; color:#F5F5F7;
-            }
-            QListWidget::item:selected {
-                background:#E53935; color:white;
-            }
-            QListWidget::item:hover {
-                background:#2A2A33;
-            }
+            QListWidget { background:#17171C; border:1px solid #2A2A33; border-radius:12px; padding:6px; }
+            QListWidget::item { padding:10px 12px; border-radius:8px; color:#F5F5F7; }
+            QListWidget::item:selected { background:#E53935; color:white; }
+            QListWidget::item:hover { background:#2A2A33; }
         """)
         self.list.itemDoubleClicked.connect(self._on_double_click)
         self.list.setContextMenuPolicy(Qt.CustomContextMenu)
         self.list.customContextMenuRequested.connect(self._on_context_menu)
         root.addWidget(self.list, 1)
 
-        # пустое состояние
-        self._empty = QLabel(tr("library.empty"))
-        self._empty.setAlignment(Qt.AlignCenter)
-        self._empty.setStyleSheet("color:#5A5A66; font-size:14px; padding:20px;")
-        root.addWidget(self._empty)
+    # --- Drag & Drop ---
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
 
-    # ---------- данные ----------
+    def dropEvent(self, event):
+        paths = []
+        for url in event.mimeData().urls():
+            if url.isLocalFile():
+                paths.append(url.toLocalFile())
+        self.add_paths(paths)
+        event.acceptProposedAction()
+
+    # --- Поиск ---
+    def _filter_list(self):
+        query = self.search_bar.text().lower()
+        for i in range(self.list.count()):
+            item = self.list.item(i)
+            path = item.data(Qt.UserRole)
+            tags = self._items_data.get(path, {}).get("tags", "")
+            text = f"{item.text()} {tags}".lower()
+            item.setHidden(query not in text)
+
+    # --- Данные ---
     def _refresh(self):
         self.list.clear()
         for path in self._paths:
-            if Path(path).exists():
-                item = QListWidgetItem(f"🎬  {Path(path).name}")
-                item.setData(Qt.UserRole, path)
-                item.setToolTip(path)
-                self.list.addItem(item)
-        has_items = self.list.count() > 0
-        self.list.setVisible(has_items)
-        self._empty.setVisible(not has_items)
+            tags = self._items_data[path]["tags"]
+            name = Path(path).name
+            display = f"🎬 {name}"
+            if tags:
+                display += f"  [{tags}]"
+            item = QListWidgetItem(display)
+            item.setData(Qt.UserRole, path)
+            item.setToolTip(path)
+            self.list.addItem(item)
         self._persist()
+        self._filter_list()
 
     def _persist(self):
-        settings().set_library(self._paths)
-
-    # ---------- добавление ----------
-    def _add_files(self):
-        start_dir = settings().get_default_dir() or ""
-        paths, _ = QFileDialog.getOpenFileNames(
-            self, tr("dialog.openVideo"), start_dir, tr("dialog.videoFilt")
-        )
-        self.add_paths(paths)
+        data = [{"path": p, "tags": self._items_data[p]["tags"]} for p in self._paths]
+        settings().set_library(data)
 
     def add_paths(self, paths: list[str]):
-        """Публичный метод — можно добавлять извне (например, при открытии файла)."""
         added = False
         for p in paths:
-            if not p:
-                continue
-            ext = Path(p).suffix.lower()
-            if ext not in VIDEO_EXTS:
-                continue
+            if not p: continue
+            if Path(p).suffix.lower() not in VIDEO_EXTS: continue
             if p not in self._paths:
                 self._paths.append(p)
+                self._items_data[p] = {"tags": ""}
                 added = True
         if added:
             self._refresh()
 
-    # ---------- удаление ----------
+    def _play_all(self):
+        if self._paths:
+            self.playAllRequested.emit(self._paths)
+
     def _clear_all(self):
-        if not self._paths:
-            return
-        ans = QMessageBox.question(
-            self, "ScarlyPlayer", tr("library.clear") + "?",
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
-        )
+        if not self._paths: return
+        ans = QMessageBox.question(self, tr("dialog.confirm"), tr("library.clear.confirm"), QMessageBox.Yes | QMessageBox.No)
         if ans == QMessageBox.Yes:
             self._paths.clear()
+            self._items_data.clear()
             self._refresh()
 
-    def _remove_item(self, item: QListWidgetItem):
-        path = item.data(Qt.UserRole)
-        if path in self._paths:
-            self._paths.remove(path)
-            self._refresh()
+    def _add_files(self):
+        start = settings().get_default_dir() or ""
+        paths, _ = QFileDialog.getOpenFileNames(self, tr("dialog.openVideo"), start, tr("dialog.videoFilt"))
+        self.add_paths(paths)
 
-    # ---------- события ----------
     def _on_double_click(self, item: QListWidgetItem):
         path = item.data(Qt.UserRole)
-        if path and Path(path).exists():
+        if path:
             self.playRequested.emit(path)
 
     def _on_context_menu(self, pos):
         item = self.list.itemAt(pos)
-        if not item:
-            return
+        if not item: return
+        path = item.data(Qt.UserRole)
         menu = QMenu(self)
-        act_play = menu.addAction("▶  " + tr("btn.play").replace("▶  ", ""))
+        act_play = menu.addAction("▶ Играть")
+        act_tags = menu.addAction("🏷 Изменить теги")
         act_remove = menu.addAction(tr("library.remove"))
         action = menu.exec(self.list.mapToGlobal(pos))
+        
         if action == act_play:
             self._on_double_click(item)
         elif action == act_remove:
-            self._remove_item(item)
+            if path in self._paths: self._paths.remove(path)
+            self._items_data.pop(path, None)
+            self._refresh()
+        elif action == act_tags:
+            from PySide6.QtWidgets import QInputDialog
+            tags, ok = QInputDialog.getText(self, "Теги", "Введите теги (через запятую):", text=self._items_data[path]["tags"])
+            if ok:
+                self._items_data[path]["tags"] = tags
+                self._refresh()
 
-    # ---------- i18n ----------
     def retranslate(self, _lang: str = ""):
         self._title.setText(tr("library.title"))
         self.btn_add.setText(tr("library.add"))
         self.btn_clear.setText(tr("library.clear"))
-        self._hint.setText(tr("library.play_hint"))
-        self._empty.setText(tr("library.empty"))

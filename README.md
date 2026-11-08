@@ -15,7 +15,7 @@
 ## 🚀 Установка
 
 ### Windows (готовый бинарник)
-1. Скачай `ScarlyPlayer-v1.0.0-win64.zip` со страницы [Releases](../../releases)
+1. Скачай `ScarlyPlayer-v1.0.0-win64.zip` со страницы [Releases]
 2. Распакуй в любую папку
 3. Запусти `ScarlyPlayer.exe` — Python не требуется
 

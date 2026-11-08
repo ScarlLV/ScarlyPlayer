@@ -1,36 +1,51 @@
-# core/theme.py
-"""Централизованная тема ScarlyPlayer (v1.0)."""
+# core/theme.py — полный код
 
-ACCENT        = "#E53935"   # основной красный
-ACCENT_HOVER  = "#FF5252"
-ACCENT_PRESS  = "#C62828"
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import QApplication
+from core.settings import settings
 
 BG_DARK       = "#0F0F12"
 BG_PANEL      = "#17171C"
 BG_ELEVATED   = "#1F1F26"
 BG_HOVER      = "#2A2A33"
-
-TEXT_PRIMARY   = "#F5F5F7"
-TEXT_SECONDARY = "#A0A0AB"
-TEXT_DISABLED  = "#5A5A66"
-
+TEXT_PRIMARY  = "#F5F5F7"
+TEXT_SECONDARY= "#A0A0AB"
 BORDER        = "#2A2A33"
 RADIUS        = 12
 
+def _adjust_color(hex_color: str, factor: float) -> str:
+    c = QColor(hex_color)
+    h, s, v, a = c.getHsvF()
+    v = max(0.0, min(1.0, v * factor))
+    c.setHsvF(h, s, v, a)
+    return c.name()
 
 def build_qss() -> str:
-    """Собирает глобальный стиль приложения."""
+    s = settings()
+    accent = s.get_accent_color()
+    accent_hover = _adjust_color(accent, 1.2)
+    accent_press = _adjust_color(accent, 0.8)
+    
+    bg_img = s.get_bg_image()
+    
+    # Если есть фон, делаем панели почти непрозрачными, чтобы текст читался
+    bg_main = "transparent" if bg_img else BG_DARK
+    bg_panel = "rgba(23, 23, 28, 245)" if bg_img else BG_PANEL
+    bg_elevated = "rgba(31, 31, 38, 245)" if bg_img else BG_ELEVATED
+    bg_card = "rgba(31, 31, 38, 245)" if bg_img else BG_ELEVATED
+
     return f"""
     QWidget {{
-        background: {BG_DARK};
+        background: {bg_main};
         color: {TEXT_PRIMARY};
         font-family: "Segoe UI", "SF Pro Display", "Inter", sans-serif;
         font-size: 13px;
     }}
-
-    /* ===== Title bar ===== */
+    QMainWindow {{
+        background: transparent;
+    }}
     #TitleBar {{
-        background: {BG_PANEL};
+        background: {bg_panel};
         border-bottom: 1px solid {BORDER};
         border-top-left-radius: {RADIUS}px;
         border-top-right-radius: {RADIUS}px;
@@ -41,8 +56,6 @@ def build_qss() -> str:
         font-size: 14px;
         letter-spacing: 0.5px;
     }}
-
-    /* ===== Кнопки окна ===== */
     QPushButton#WinBtn {{
         background: transparent;
         border: none;
@@ -56,13 +69,11 @@ def build_qss() -> str:
         color: {TEXT_PRIMARY};
     }}
     QPushButton#WinClose:hover {{
-        background: {ACCENT};
+        background: {accent};
         color: white;
     }}
-
-    /* ===== Sidebar ===== */
     #Sidebar {{
-        background: {BG_PANEL};
+        background: {bg_panel};
         border-right: 1px solid {BORDER};
     }}
     QPushButton#NavBtn {{
@@ -79,27 +90,22 @@ def build_qss() -> str:
         color: {TEXT_PRIMARY};
     }}
     QPushButton#NavBtn:checked {{
-        background: {ACCENT};
+        background: {accent};
         color: white;
         font-weight: 600;
     }}
-
-    /* ===== Видео-область ===== */
     #VideoContainer {{
         background: #000000;
         border-radius: {RADIUS}px;
     }}
-
-    /* ===== Control panel ===== */
     #ControlPanel {{
-        background: {BG_PANEL};
+        background: {bg_panel};
         border-top: 1px solid {BORDER};
         border-bottom-left-radius: {RADIUS}px;
         border-bottom-right-radius: {RADIUS}px;
     }}
-
     QPushButton#CtrlBtn {{
-        background: {BG_ELEVATED};
+        background: {bg_elevated};
         border: none;
         color: {TEXT_PRIMARY};
         border-radius: {RADIUS}px;
@@ -110,7 +116,7 @@ def build_qss() -> str:
         background: {BG_HOVER};
     }}
     QPushButton#PlayBtn {{
-        background: {ACCENT};
+        background: {accent};
         border: none;
         color: white;
         border-radius: {RADIUS}px;
@@ -118,17 +124,15 @@ def build_qss() -> str:
         font-weight: 700;
         font-size: 14px;
     }}
-    QPushButton#PlayBtn:hover  {{ background: {ACCENT_HOVER}; }}
-    QPushButton#PlayBtn:pressed{{ background: {ACCENT_PRESS}; }}
-
-    /* ===== Слайдеры ===== */
+    QPushButton#PlayBtn:hover  {{ background: {accent_hover}; }}
+    QPushButton#PlayBtn:pressed{{ background: {accent_press}; }}
     QSlider::groove:horizontal {{
         height: 4px;
-        background: {BG_ELEVATED};
+        background: {bg_elevated};
         border-radius: 2px;
     }}
     QSlider::sub-page:horizontal {{
-        background: {ACCENT};
+        background: {accent};
         border-radius: 2px;
     }}
     QSlider::handle:horizontal {{
@@ -138,17 +142,13 @@ def build_qss() -> str:
         border-radius: 7px;
     }}
     QSlider::handle:horizontal:hover {{
-        background: {ACCENT_HOVER};
+        background: {accent_hover};
     }}
-
-    /* ===== Метки ===== */
     #TimeLabel {{
         color: {TEXT_SECONDARY};
         font-family: "Consolas", monospace;
         font-size: 12px;
     }}
-
-    /* ===== Tooltip ===== */
     QToolTip {{
         background: {BG_ELEVATED};
         color: {TEXT_PRIMARY};
@@ -156,4 +156,23 @@ def build_qss() -> str:
         border-radius: 6px;
         padding: 6px;
     }}
+    QScrollArea {{
+        background: transparent;
+    }}
+    QScrollArea > QWidget > QWidget {{
+        background: transparent;
+    }}
+    
+    /* Стили для плиток в настройках */
+    QFrame#SettingsCard {{
+        background: {bg_card};
+        border: 1px solid {BORDER};
+        border-radius: 16px;
+    }}
+    QLabel {{
+        background: transparent;
+    }}
     """
+
+def apply_theme(app: QApplication):
+    app.setStyleSheet(build_qss())
