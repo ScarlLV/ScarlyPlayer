@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_all
 
-datas = []
+datas = [('assets', 'assets')]
 binaries = []
 hiddenimports = ['PySide6.QtMultimedia', 'PySide6.QtMultimediaWidgets', 'PySide6.QtNetwork']
 tmp_ret = collect_all('PySide6')
@@ -39,6 +39,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=['assets/icon.ico'],
 )
 coll = COLLECT(
     exe,

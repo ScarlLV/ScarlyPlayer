@@ -2,8 +2,15 @@
 """Персистентные настройки ScarlyPlayer через QSettings."""
 
 from __future__ import annotations
+import json
+import shutil
+import tempfile
 from pathlib import Path
+
 from PySide6.QtCore import QSettings
+from PySide6.QtWidgets import QFileDialog, QMessageBox
+
+from core.i18n import tr
 
 
 ORG = "ScarlyPlayer"
@@ -11,120 +18,211 @@ APP = "ScarlyPlayer"
 
 
 class Settings:
-    """Тонкая обёртка над QSettings."""
-
     def __init__(self):
         self._s = QSettings(ORG, APP)
 
     # ============================================================
-    #  ЯЗЫК
+    #  БАЗОВОЕ
     # ============================================================
     def get_language(self, default: str = "ru") -> str:
         return self._s.value("ui/language", default, type=str)
-
-    def set_language(self, code: str) -> None:
+    def set_language(self, code: str):
         self._s.setValue("ui/language", code)
 
-    # ============================================================
-    #  ПАПКА ПО УМОЛЧАНИЮ
-    # ============================================================
+    def get_theme(self) -> str:
+        return self._s.value("ui/theme", "dark", type=str)
+    def set_theme(self, theme: str):
+        self._s.setValue("ui/theme", theme)
+
+    def get_accent_color(self) -> str:
+        return self._s.value("ui/accent_color", "#E53935", type=str)
+    def set_accent_color(self, color: str):
+        self._s.setValue("ui/accent_color", color)
+
+    def get_bg_image(self) -> str:
+        return self._s.value("ui/bg_image", "", type=str)
+    def set_bg_image(self, path: str):
+        self._s.setValue("ui/bg_image", path)
+
+    def get_bg_video(self) -> str:
+        return self._s.value("ui/bg_video", "", type=str)
+    def set_bg_video(self, path: str):
+        self._s.setValue("ui/bg_video", path)
+
+    def get_sidebar_visible(self) -> bool:
+        return self._s.value("ui/sidebar_visible", True, type=bool)
+    def set_sidebar_visible(self, visible: bool):
+        self._s.setValue("ui/sidebar_visible", bool(visible))
+
     def get_default_dir(self) -> str:
         return self._s.value("files/default_dir", "", type=str)
-
-    def set_default_dir(self, path: str) -> None:
+    def set_default_dir(self, path: str):
         self._s.setValue("files/default_dir", path)
 
+    def get_volume(self) -> int:
+        return self._s.value("audio/volume", 80, type=int)
+    def set_volume(self, value: int):
+        self._s.setValue("audio/volume", int(value))
+
+    def get_audio_device(self) -> str:
+        return self._s.value("audio/device", "", type=str)
+    def set_audio_device(self, name: str):
+        self._s.setValue("audio/device", name)
+
     # ============================================================
-    #  БИБЛИОТЕКА
-    #  Формат: list[dict]  →  [{"path": str, "tags": str}, ...]
+    #  БИБЛИОТЕКА (с избранным и счётчиком просмотров)
     # ============================================================
     def get_library(self) -> list[dict]:
         raw = self._s.value("library/files", [], type=list)
-
-        # QSettings может вернуть строку вместо списка
-        if isinstance(raw, str):
-            raw = [p for p in raw.split("|") if p]
         if not isinstance(raw, list):
             return []
-
-        result: list[dict] = []
+        res = []
         for item in raw:
             if isinstance(item, dict) and "path" in item:
-                # новый формат
-                result.append({
-                    "path": str(item.get("path", "")),
+                res.append({
+                    "path": str(item["path"]),
                     "tags": str(item.get("tags", "")),
+                    "favorite": bool(item.get("favorite", False)),
+                    "watch_count": int(item.get("watch_count", 0)),
+                    "last_watched": int(item.get("last_watched", 0)),
+                    "title": str(item.get("title", "")),
+                    "author": str(item.get("author", "")),
                 })
             elif isinstance(item, str) and item:
-                # старый формат (просто строки) — конвертируем
-                result.append({"path": item, "tags": ""})
-        return result
+                res.append({
+                    "path": item, "tags": "", "favorite": False,
+                    "watch_count": 0, "last_watched": 0,
+                    "title": "", "author": "",
+                })
+        return res
 
-    def set_library(self, items: list[dict]) -> None:
-        # Нормализуем перед сохранением
-        clean: list[dict] = []
-        for it in items:
-            path = str(it.get("path", "")) if isinstance(it, dict) else str(it)
-            tags = str(it.get("tags", "")) if isinstance(it, dict) else ""
-            if path:
-                clean.append({"path": path, "tags": tags})
-        self._s.setValue("library/files", clean)
+    def set_library(self, items: list[dict]):
+        self._s.setValue("library/files", items)
 
     # ============================================================
-    #  ГРОМКОСТЬ
+    #  ХОТКЕИ
     # ============================================================
-    def get_volume(self, default: int = 80) -> int:
-        return self._s.value("audio/volume", default, type=int)
-
-    def set_volume(self, value: int) -> None:
-        self._s.setValue("audio/volume", int(value))
-
-    # ============================================================
-    #  ТЕМА / АКЦЕНТ
-    # ============================================================
-    def get_accent_color(self, default: str = "#E53935") -> str:
-        return self._s.value("ui/accent_color", default, type=str)
-
-    def set_accent_color(self, color_hex: str) -> None:
-        self._s.setValue("ui/accent_color", color_hex)
+    def get_hotkey(self, action: str, default: str) -> str:
+        return self._s.value(f"hotkeys/{action}", default, type=str)
+    def set_hotkey(self, action: str, key: str):
+        self._s.setValue(f"hotkeys/{action}", key)
 
     # ============================================================
-    #  ФОН ПРИЛОЖЕНИЯ
+    #  ПОЗИЦИИ (Продолжить просмотр)
     # ============================================================
-    def get_bg_image(self) -> str:
-        return self._s.value("ui/bg_image", "", type=str)
+    def get_remember_position(self) -> bool:
+        return self._s.value("player/remember_position", True, type=bool)
+    def set_remember_position(self, val: bool):
+        self._s.setValue("player/remember_position", bool(val))
 
-    def set_bg_image(self, path: str) -> None:
-        self._s.setValue("ui/bg_image", path)
+    def get_position(self, path: str) -> int:
+        if not self.get_remember_position():
+            return 0
+        return self._s.value(f"player/pos/{path}", 0, type=int)
+    def set_position(self, path: str, ms: int):
+        if not self.get_remember_position():
+            return
+        if ms > 5000:
+            self._s.setValue(f"player/pos/{path}", int(ms))
+        else:
+            self._s.remove(f"player/pos/{path}")
 
     # ============================================================
-    #  ВИДИМОСТЬ САЙДБАРА
+    #  FPS-ОВЕРЛЕЙ
     # ============================================================
-    def get_sidebar_visible(self, default: bool = True) -> bool:
-        return self._s.value("ui/sidebar_visible", default, type=bool)
-
-    def set_sidebar_visible(self, visible: bool) -> None:
-        self._s.setValue("ui/sidebar_visible", bool(visible))
+    def get_fps_overlay(self) -> bool:
+        return self._s.value("ui/fps_overlay", False, type=bool)
+    def set_fps_overlay(self, val: bool):
+        self._s.setValue("ui/fps_overlay", bool(val))
 
     # ============================================================
-    #  (Опционально) СКОРОСТЬ / ASPECT — если захочешь запоминать
+    #  СТАТИСТИКА
     # ============================================================
-    def get_playback_rate(self, default: float = 1.0) -> float:
-        return float(self._s.value("player/rate", default, type=float))
+    def get_total_watch_seconds(self) -> int:
+        return self._s.value("stats/total_seconds", 0, type=int)
+    def add_watch_seconds(self, sec: int):
+        total = self.get_total_watch_seconds() + int(sec)
+        self._s.setValue("stats/total_seconds", total)
 
-    def set_playback_rate(self, rate: float) -> None:
-        self._s.setValue("player/rate", float(rate))
+    def increment_watch_count(self, path: str):
+        """Увеличивает счётчик просмотров видео."""
+        import time
+        lib = self.get_library()
+        for item in lib:
+            if item["path"] == path:
+                item["watch_count"] = int(item.get("watch_count", 0)) + 1
+                item["last_watched"] = int(time.time())
+                break
+        self.set_library(lib)
 
-    def get_aspect_mode(self, default: str = "fit") -> str:
-        return self._s.value("player/aspect", default, type=str)
+    # ============================================================
+    #  СБРОС / ПРОФИЛИ
+    # ============================================================
+    def reset_all(self):
+        self._s.clear()
 
-    def set_aspect_mode(self, mode: str) -> None:
-        self._s.setValue("player/aspect", mode)
+    def export_profile(self, parent_widget):
+        path, _ = QFileDialog.getSaveFileName(
+            parent_widget, tr("dialog.export"), "profile.scarly", tr("dialog.scarly")
+        )
+        if not path:
+            return
+        data = {
+            "language": self.get_language(),
+            "theme": self.get_theme(),
+            "accent": self.get_accent_color(),
+            "bg": self.get_bg_image(),
+            "volume": self.get_volume(),
+            "audio": self.get_audio_device(),
+            "library": self.get_library(),
+        }
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+        QMessageBox.information(parent_widget, tr("dialog.export"), "Профиль сохранён!")
+
+    def import_profile(self, parent_widget) -> bool:
+        path, _ = QFileDialog.getOpenFileName(
+            parent_widget, tr("dialog.import"), "", tr("dialog.scarly")
+        )
+        if not path:
+            return False
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            self.set_language(data.get("language", "ru"))
+            self.set_theme(data.get("theme", "dark"))
+            self.set_accent_color(data.get("accent", "#E53935"))
+            self.set_bg_image(data.get("bg", ""))
+            self.set_volume(data.get("volume", 80))
+            self.set_audio_device(data.get("audio", ""))
+            self.set_library(data.get("library", []))
+            QMessageBox.information(parent_widget, tr("dialog.import"), "Профиль загружен!")
+            return True
+        except Exception as e:
+            QMessageBox.warning(parent_widget, tr("dialog.import"), f"Ошибка: {e}")
+            return False
+
+    # ============================================================
+    #  КЭШ
+    # ============================================================
+    def clear_cache(self) -> int:
+        """Очищает временные файлы. Возвращает кол-во удалённых."""
+        removed = 0
+        # Временная папка PyInstaller (если onefile)
+        import sys, os
+        if hasattr(sys, "_MEIPASS"):
+            return 0  # не трогаем .exe изнутри
+        # Папка temp приложения
+        app_temp = Path(tempfile.gettempdir()) / "ScarlyPlayer"
+        if app_temp.exists():
+            try:
+                shutil.rmtree(app_temp)
+                removed += 1
+            except Exception:
+                pass
+        return removed
 
 
-# ============================================================
-#  СИНГЛТОН
-# ============================================================
 _settings: Settings | None = None
 
 

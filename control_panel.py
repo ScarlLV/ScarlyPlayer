@@ -19,6 +19,8 @@ class ControlPanel(QWidget):
     volumeChanged = Signal(int)
     speedChanged  = Signal(float)
     aspectChanged = Signal(str)
+    fullscreenToggled = Signal()
+    infoRequested = Signal()
 
     def __init__(self):
         super().__init__()
@@ -35,7 +37,7 @@ class ControlPanel(QWidget):
         root.setContentsMargins(16, 10, 16, 12)
         root.setSpacing(8)
 
-        # --- ROW 1: seek ---
+        # ROW 1: seek
         seek_row = QHBoxLayout()
         seek_row.setSpacing(10)
         self.time_current = QLabel("00:00"); self.time_current.setObjectName("TimeLabel")
@@ -52,14 +54,21 @@ class ControlPanel(QWidget):
         seek_row.addWidget(self.time_total)
         root.addLayout(seek_row)
 
-        # --- ROW 2: buttons ---
+        # ROW 2: buttons
         btn_row = QHBoxLayout()
-        btn_row.setSpacing(10)
+        btn_row.setSpacing(8)
 
+        # Левая часть
         self.btn_open = QPushButton(tr("btn.open"))
         self.btn_open.setObjectName("CtrlBtn")
         self.btn_open.setCursor(Qt.PointingHandCursor)
         self.btn_open.clicked.connect(self._pick_file)
+
+        # Мини-группа: Stop + Play
+        self.btn_stop = QPushButton(tr("btn.stop"))
+        self.btn_stop.setObjectName("CtrlBtn")
+        self.btn_stop.setFixedWidth(50)
+        self.btn_stop.setCursor(Qt.PointingHandCursor)
 
         self.btn_play = QPushButton(tr("btn.play"))
         self.btn_play.setObjectName("PlayBtn")
@@ -67,27 +76,32 @@ class ControlPanel(QWidget):
         self.btn_play.setFixedWidth(140)
         self.btn_play.clicked.connect(self.playToggled)
 
-        self.btn_stop = QPushButton(tr("btn.stop"))
-        self.btn_stop.setObjectName("CtrlBtn")
-        self.btn_stop.setCursor(Qt.PointingHandCursor)
-        self.btn_stop.setFixedWidth(50)
+        # Info + Fullscreen
+        self.btn_info = QPushButton("ℹ️")
+        self.btn_info.setObjectName("CtrlBtn")
+        self.btn_info.setFixedWidth(40)
+        self.btn_info.clicked.connect(self.infoRequested)
 
-        # Скорость
+        self.btn_fullscreen = QPushButton("🖥️")
+        self.btn_fullscreen.setObjectName("CtrlBtn")
+        self.btn_fullscreen.setFixedWidth(40)
+        self.btn_fullscreen.clicked.connect(self.fullscreenToggled)
+
+        # Speed + Aspect
         self.speed_combo = QComboBox()
         self.speed_combo.setObjectName("CtrlBtn")
         self.speed_combo.setFixedWidth(80)
         self.speed_combo.addItems(["0.5x", "0.75x", "1.0x", "1.25x", "1.5x", "2.0x"])
         self.speed_combo.setCurrentText("1.0x")
-        self.speed_combo.currentTextChanged.connect(self._on_speed_changed)
+        self.speed_combo.currentTextChanged.connect(lambda t: self.speedChanged.emit(float(t.replace("x", ""))))
 
-        # Кадрирование (Aspect)
         self.aspect_combo = QComboBox()
         self.aspect_combo.setObjectName("CtrlBtn")
         self.aspect_combo.setFixedWidth(100)
         self.aspect_combo.addItems(["Fit", "Fill", "Stretch"])
-        self.aspect_combo.currentTextChanged.connect(self._on_aspect_changed)
+        self.aspect_combo.currentTextChanged.connect(lambda t: self.aspectChanged.emit(t.lower()))
 
-        # Громкость
+        # Volume
         self._vol_icon = QLabel(tr("label.volume"))
         self.volume = QSlider(Qt.Horizontal)
         self.volume.setRange(0, 100)
@@ -95,22 +109,18 @@ class ControlPanel(QWidget):
         self.volume.setFixedWidth(120)
         self.volume.valueChanged.connect(self.volumeChanged)
 
+        # Компоновка (Stop + Play рядом, как одна группа)
         btn_row.addWidget(self.btn_open)
         btn_row.addWidget(self.btn_stop)
         btn_row.addWidget(self.btn_play)
+        btn_row.addWidget(self.btn_info)
+        btn_row.addWidget(self.btn_fullscreen)
         btn_row.addWidget(self.speed_combo)
         btn_row.addWidget(self.aspect_combo)
         btn_row.addStretch()
         btn_row.addWidget(self._vol_icon)
         btn_row.addWidget(self.volume)
         root.addLayout(btn_row)
-
-    def _on_speed_changed(self, text: str):
-        rate = float(text.replace("x", ""))
-        self.speedChanged.emit(rate)
-
-    def _on_aspect_changed(self, text: str):
-        self.aspectChanged.emit(text.lower())
 
     def _pick_file(self):
         start = settings().get_default_dir() or ""
@@ -119,13 +129,11 @@ class ControlPanel(QWidget):
             self.openRequested.emit(path)
 
     def set_duration(self, ms: int):
-        self.seek.setRange(0, int(ms))
-        self.time_total.setText(_fmt(ms))
+        self.seek.setRange(0, int(ms)); self.time_total.setText(_fmt(ms))
 
     def set_position(self, ms: int):
         if not self._seeking:
-            self.seek.setValue(int(ms))
-            self.time_current.setText(_fmt(ms))
+            self.seek.setValue(int(ms)); self.time_current.setText(_fmt(ms))
 
     def set_playing(self, playing: bool):
         self._is_playing = playing

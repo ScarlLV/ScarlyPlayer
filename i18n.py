@@ -1,404 +1,389 @@
 # core/i18n.py
-"""
-Лёгкий i18n для ScarlyPlayer.
-Поддерживаемые языки: ru / uk / de / zh / ja / fr.
-Без gettext, без .qm-файлов — всё в одном словаре.
-"""
+"""Лёгкий i18n для ScarlyPlayer (9 языков)."""
 
 from __future__ import annotations
 from PySide6.QtCore import QObject, Signal
 
-
-# ============================================================
-#  МЕТА
-# ============================================================
-APP_VERSION = "1.1.11"
+APP_VERSION = "1.2.22"
 APP_AUTHOR  = "ScarlyDev"
-APP_REPO    = "https://github.com/ScarlLV"
-
+APP_REPO    = "https://github.com/ScarlLV/ScarlyPlayer"
 DEFAULT_LANG = "ru"
 
 LANG_NAMES = {
-    "ru": "🇷🇺 Русский",
-    "uk": "🇺🇦 Українська",
-    "de": "🇩🇪 Deutsch",
-    "zh": "🇨🇳 中文",
-    "ja": "🇯🇵 日本語",
-    "fr": "🇫🇷 Français",
+    "ru": "🇷🇺 Русский", "uk": "🇺🇦 Українська", "be": "🇧🇾 Беларуская",
+    "de": "🇩🇪 Deutsch", "zh": "🇨🇳 中文", "ja": "🇯🇵 日本語",
+    "fr": "🇫🇷 Français", "es": "🇪🇸 Español", "pt": "🇵🇹 Português",
 }
 
-# ============================================================
-#  ПЕРЕВОДЫ
-# ============================================================
 TRANSLATIONS: dict[str, dict[str, str]] = {
-
-    # ============================================================
-    #  РУССКИЙ
-    # ============================================================
     "ru": {
-        "app.title":            "ScarlyPlayer",
-
-        "nav.player":           "Плеер",
-        "nav.library":          "Библиотека",
-        "nav.settings":         "Настройки",
-        "nav.about":            "О ScarlyPlayer",
-
-        "btn.open":             "📂  Открыть файл",
-        "btn.play":             "▶  Играть",
-        "btn.pause":            "⏸  Пауза",
-        "btn.stop":             "⏹",
-        "label.volume":         "🔊",
-
-        "dialog.openVideo":     "Выберите видео",
-        "dialog.videoFilt":     "Видео (*.mp4 *.mkv *.avi *.mov *.webm *.m4v *.flv *.wmv *.ts);;Все файлы (*)",
-        "dialog.confirm":       "Подтверждение",
-        "dialog.yes":           "Да",
-        "dialog.no":            "Нет",
-        "dialog.cancel":        "Отмена",
-
-        "player.placeholder":   "Откройте видео, чтобы начать",
-
-        "settings.lang":            "Язык интерфейса",
-        "settings.appearance":      "Внешний вид",
-        "settings.accent":          "Акцентный цвет",
-        "settings.accent.pick":     "Выбрать цвет",
-        "settings.bg":              "Свой фон",
-        "settings.bg.pick":         "🖼  Выбрать картинку",
-        "settings.bg.reset":        "Убрать фон",
-        "settings.bg.none":         "Стандартный",
-        "settings.folder":          "Папка по умолчанию",
-        "settings.folder.none":     "Не выбрана",
-        "settings.folder.pick":     "📁  Выбрать папку",
-        "settings.folder.reset":    "Сбросить",
-        "settings.extended.soon":   "Расширенные настройки скоро...",
-
-        "library.title":        "Библиотека",
-        "library.empty":        "Библиотека пуста — откройте файл, чтобы добавить его сюда",
-        "library.add":          "➕  Добавить файлы",
-        "library.clear":        "🗑  Очистить библиотеку",
-        "library.remove":       "Удалить из библиотеки",
-        "library.play_hint":    "Двойной клик — воспроизвести",
-        "library.clear.confirm":"Очистить всю библиотеку?",
-
-        "about.version":        "Версия",
-        "about.author":         "Автор",
-        "about.repo":           "GitHub",
-        "about.thanks":         "Сделано с ❤️  на PySide6",
+        "nav.player": "Плеер", "nav.library": "Библиотека", "nav.settings": "Настройки", "nav.about": "О ScarlyPlayer",
+        "btn.open": "📂 Открыть файл", "btn.play": "▶ Играть", "btn.pause": "⏸ Пауза", "btn.stop": "⏹",
+        "btn.fullscreen": "🖥️", "label.volume": "🔊",
+        "settings.lang": "Язык интерфейса", "settings.appearance": "Внешний вид", "settings.accent": "Акцентный цвет",
+        "settings.accent.pick": "Выбрать", "settings.bg": "Свой фон", "settings.bg.pick": "🖼 Выбрать",
+        "settings.bg.reset": "Убрать", "settings.folder": "Папка по умолчанию", "settings.folder.none": "Не выбрана",
+        "settings.folder.pick": "📁 Выбрать", "settings.folder.reset": "Сбросить", "settings.theme": "Тема",
+        "settings.theme.dark": "🌙 Тёмная", "settings.theme.light": "☀️ Светлая", "settings.misc": "Разное",
+        "settings.reset": "Сбросить все настройки", "settings.export": "Экспорт профиля", "settings.import": "Импорт профиля",
+        "settings.audio": "Аудио-устройство", "library.title": "Библиотека", "library.empty": "Библиотека пуста",
+        "library.add": "➕ Добавить", "library.clear": "🗑 Очистить", "library.remove": "Удалить", "library.play_hint": "Двойной клик — играть",
+        "library.sort": "Сортировка", "library.sort.date": "По дате", "library.sort.name": "По имени", "library.filter": "Фильтр",
+        "library.filter.all": "Все", "library.filter.recent": "Недавние", "library.filter.tagged": "С тегами",
+        "info.title": "Информация о видео", "info.close": "Закрыть", "toast.open": "Открыть", "toast.play": "Играть",
+        "dialog.openVideo": "Выберите видео", "dialog.videoFilt": "Видео (*.mp4 *.mkv *.avi *.mov *.webm);;Все файлы (*)",
+        "dialog.confirm": "Подтверждение", "dialog.reset.confirm": "Сбросить ВСЕ настройки? Это удалит библиотеку.",
+        "dialog.export": "Сохранить профиль", "dialog.import": "Загрузить профиль", "dialog.scarly": "Scarly Profile (*.scarly)",
+        "hotkeys.title": "Горячие клавиши", "hotkeys.play": "Play/Pause", "hotkeys.seek": "Перемотка", "hotkeys.fullscreen": "Полный экран",
+        "about.version": "Версия", "about.author": "Автор", "about.repo": "GitHub", "about.thanks": "Сделано с ❤️ на PySide6",
+        
+        # Новые
+        "btn.stop.tip": "Стоп", "btn.more": "Ещё", "btn.favorite": "⭐ В избранное", "btn.unfavorite": "Убрать из избранного",
+        "btn.info": "Информация", "player.buffering": "Загрузка...", "player.fps": "FPS", "player.new": "NEW", "player.favorite": "Избранное",
+        "settings.remember_position": "Запоминать позицию видео", "settings.remember_position.desc": "Показывать «Продолжить с...» при открытии",
+        "settings.fps_overlay": "Показывать FPS", "settings.fps_overlay.desc": "Счётчик кадров в углу видео",
+        "settings.video_bg": "Видео-фон", "settings.video_bg.pick": "🎥 Выбрать видео", "settings.video_bg.reset": "Убрать видео-фон",
+        "settings.cache": "Кэш и данные", "settings.cache.clear": "🗑 Очистить кэш", "settings.cache.cleared": "Кэш очищен",
+        "settings.check_updates": "🔄 Проверить обновления", "settings.check_updates.checking": "Проверка...",
+        "settings.check_updates.up_to_date": "У вас последняя версия", "settings.check_updates.available": "Доступна новая версия: {v}",
+        "settings.check_updates.error": "Не удалось проверить обновления", "settings.danger": "Опасная зона",
+        "settings.reset.desc": "Удалить все настройки, библиотеку и позиции", "settings.reset.button": "⚠️ Сбросить всё",
+        "settings.assoc": "Ассоциация файлов", "settings.assoc.desc": "Открывать видео в ScarlyPlayer",
+        "settings.assoc.button": "Привязать .mp4/.mkv к ScarlyPlayer", "settings.assoc.done": "Ассоциация установлена (требует перезапуска)",
+        "info.title_full": "Информация о файле", "info.meta.title": "Название", "info.meta.author": "Автор",
+        "info.meta.duration": "Длительность", "info.meta.size": "Размер", "info.meta.path": "Путь",
+        "info.meta.resolution": "Разрешение", "info.meta.edit": "Редактировать", "info.meta.save": "Сохранить",
+        "stats.title": "Статистика просмотра", "stats.total_hours": "Всего часов просмотра", "stats.total_videos": "Просмотрено видео",
+        "stats.favorite_count": "В избранном", "stats.library_count": "В библиотеке", "stats.top_videos": "Топ-5 по просмотрам",
     },
-
-    # ============================================================
-    #  УКРАЇНСЬКА
-    # ============================================================
     "uk": {
-        "app.title":            "ScarlyPlayer",
-
-        "nav.player":           "Плеєр",
-        "nav.library":          "Бібліотека",
-        "nav.settings":         "Налаштування",
-        "nav.about":            "Про ScarlyPlayer",
-
-        "btn.open":             "📂  Відкрити файл",
-        "btn.play":             "▶  Грати",
-        "btn.pause":            "⏸  Пауза",
-        "btn.stop":             "⏹",
-        "label.volume":         "🔊",
-
-        "dialog.openVideo":     "Виберіть відео",
-        "dialog.videoFilt":     "Відео (*.mp4 *.mkv *.avi *.mov *.webm *.m4v *.flv *.wmv *.ts);;Усі файли (*)",
-        "dialog.confirm":       "Підтвердження",
-        "dialog.yes":           "Так",
-        "dialog.no":            "Ні",
-        "dialog.cancel":        "Скасувати",
-
-        "player.placeholder":   "Відкрийте відео, щоб почати",
-
-        "settings.lang":            "Мова інтерфейсу",
-        "settings.appearance":      "Зовнішній вигляд",
-        "settings.accent":          "Акцентний колір",
-        "settings.accent.pick":     "Вибрати колір",
-        "settings.bg":              "Власний фон",
-        "settings.bg.pick":         "🖼  Вибрати картинку",
-        "settings.bg.reset":        "Прибрати фон",
-        "settings.bg.none":         "Стандартний",
-        "settings.folder":          "Папка за замовчуванням",
-        "settings.folder.none":     "Не обрано",
-        "settings.folder.pick":     "📁  Вибрати папку",
-        "settings.folder.reset":    "Скинути",
-        "settings.extended.soon":   "Розширені налаштування скоро...",
-
-        "library.title":        "Бібліотека",
-        "library.empty":        "Бібліотека порожня — відкрийте файл, щоб додати його сюди",
-        "library.add":          "➕  Додати файли",
-        "library.clear":        "🗑  Очистити бібліотеку",
-        "library.remove":       "Видалити з бібліотеки",
-        "library.play_hint":    "Подвійний клік — відтворити",
-        "library.clear.confirm":"Очистити всю бібліотеку?",
-
-        "about.version":        "Версія",
-        "about.author":         "Автор",
-        "about.repo":           "GitHub",
-        "about.thanks":         "Зроблено з ❤️  на PySide6",
+        "nav.player": "Плеєр", "nav.library": "Бібліотека", "nav.settings": "Налаштування", "nav.about": "Про ScarlyPlayer",
+        "btn.open": "📂 Відкрити", "btn.play": "▶ Грати", "btn.pause": "⏸ Пауза", "btn.stop": "⏹",
+        "btn.fullscreen": "🖥️", "label.volume": "🔊",
+        "settings.lang": "Мова", "settings.appearance": "Зовнішній вигляд", "settings.accent": "Акцентний колір",
+        "settings.accent.pick": "Вибрати", "settings.bg": "Власний фон", "settings.bg.pick": "🖼 Вибрати",
+        "settings.bg.reset": "Прибрати", "settings.folder": "Папка", "settings.folder.none": "Не обрано",
+        "settings.folder.pick": "📁 Вибрати", "settings.folder.reset": "Скинути", "settings.theme": "Тема",
+        "settings.theme.dark": "🌙 Темна", "settings.theme.light": "☀️ Світла", "settings.misc": "Різне",
+        "settings.reset": "Скинути все", "settings.export": "Експорт", "settings.import": "Імпорт",
+        "settings.audio": "Аудіо-пристрій", "library.title": "Бібліотека", "library.empty": "Порожньо",
+        "library.add": "➕ Додати", "library.clear": "🗑 Очистити", "library.remove": "Видалити", "library.play_hint": "Подвійний клік — грати",
+        "library.sort": "Сортування", "library.sort.date": "За датою", "library.sort.name": "За ім'ям", "library.filter": "Фільтр",
+        "library.filter.all": "Всі", "library.filter.recent": "Недавні", "library.filter.tagged": "З тегами",
+        "info.title": "Інформація", "info.close": "Закрити", "toast.open": "Відкрити", "toast.play": "Грати",
+        "dialog.openVideo": "Виберіть відео", "dialog.videoFilt": "Відео (*.mp4 *.mkv);;Всі (*)",
+        "dialog.confirm": "Підтвердження", "dialog.reset.confirm": "Скинути ВСЕ?",
+        "dialog.export": "Зберегти", "dialog.import": "Загрузити", "dialog.scarly": "Scarly (*.scarly)",
+        "hotkeys.title": "Гарячі клавіші", "hotkeys.play": "Play/Pause", "hotkeys.seek": "Перемотка", "hotkeys.fullscreen": "Повний екран",
+        "about.version": "Версія", "about.author": "Автор", "about.repo": "GitHub", "about.thanks": "Зроблено ❤️",
+        "btn.stop.tip": "Стоп", "btn.more": "Ще", "btn.favorite": "⭐ В обране", "btn.unfavorite": "Прибрати з обраного",
+        "btn.info": "Інформація", "player.buffering": "Завантаження...", "player.fps": "FPS", "player.new": "NEW", "player.favorite": "Обране",
+        "settings.remember_position": "Запам'ятовувати позицію", "settings.remember_position.desc": "Продовжувати з місця зупинки",
+        "settings.fps_overlay": "Показувати FPS", "settings.fps_overlay.desc": "Лічильник кадрів",
+        "settings.video_bg": "Відео-фон", "settings.video_bg.pick": "🎥 Вибрати відео", "settings.video_bg.reset": "Прибрати",
+        "settings.cache": "Кеш", "settings.cache.clear": "🗑 Очистити кеш", "settings.cache.cleared": "Кеш очищено",
+        "settings.check_updates": "🔄 Перевірити оновлення", "settings.check_updates.checking": "Перевірка...",
+        "settings.check_updates.up_to_date": "У вас остання версія", "settings.check_updates.available": "Доступна нова версія: {v}",
+        "settings.check_updates.error": "Не вдалося перевірити", "settings.danger": "Небезпечна зона",
+        "settings.reset.desc": "Видалити всі налаштування", "settings.reset.button": "⚠️ Скинути все",
+        "settings.assoc": "Асоціація файлів", "settings.assoc.desc": "Відкривати відео в ScarlyPlayer",
+        "settings.assoc.button": "Прив'язати .mp4/.mkv", "settings.assoc.done": "Асоціацію встановлено",
+        "info.title_full": "Інформація про файл", "info.meta.title": "Назва", "info.meta.author": "Автор",
+        "info.meta.duration": "Тривалість", "info.meta.size": "Розмір", "info.meta.path": "Шлях",
+        "info.meta.resolution": "Роздільність", "info.meta.edit": "Редагувати", "info.meta.save": "Зберегти",
+        "stats.title": "Статистика", "stats.total_hours": "Годин перегляду", "stats.total_videos": "Переглянуто відео",
+        "stats.favorite_count": "В обраному", "stats.library_count": "У бібліотеці", "stats.top_videos": "Топ-5 за переглядами",
     },
-
-    # ============================================================
-    #  DEUTSCH
-    # ============================================================
+    "be": {
+        "nav.player": "Плеер", "nav.library": "Бібліятэка", "nav.settings": "Налады", "nav.about": "Аб ScarlyPlayer",
+        "btn.open": "📂 Адкрыць", "btn.play": "▶ Граць", "btn.pause": "⏸ Пауза", "btn.stop": "⏹",
+        "btn.fullscreen": "🖥️", "label.volume": "🔊",
+        "settings.lang": "Мова", "settings.appearance": "Выгляд", "settings.accent": "Акцэнтны колер",
+        "settings.accent.pick": "Выбраць", "settings.bg": "Свой фон", "settings.bg.pick": "🖼 Выбраць",
+        "settings.bg.reset": "Прыбраць", "settings.folder": "Папка", "settings.folder.none": "Не абрана",
+        "settings.folder.pick": "📁 Выбраць", "settings.folder.reset": "Скінуць", "settings.theme": "Тэма",
+        "settings.theme.dark": "🌙 Цёмная", "settings.theme.light": "☀️ Светлая", "settings.misc": "Рознае",
+        "settings.reset": "Скінуць усё", "settings.export": "Экспарт", "settings.import": "Імпарт",
+        "settings.audio": "Аўдыё-прылада", "library.title": "Бібліятэка", "library.empty": "Пуста",
+        "library.add": "➕ Дадаць", "library.clear": "🗑 Ачысціць", "library.remove": "Выдаліць", "library.play_hint": "Двойчы клік — граць",
+        "library.sort": "Сартаванне", "library.sort.date": "Па даце", "library.sort.name": "Па імені", "library.filter": "Фільтр",
+        "library.filter.all": "Усе", "library.filter.recent": "Нядаўнія", "library.filter.tagged": "З тэгамі",
+        "info.title": "Інфармацыя", "info.close": "Закрыць", "toast.open": "Адкрыць", "toast.play": "Граць",
+        "dialog.openVideo": "Выберыце відэа", "dialog.videoFilt": "Відэа (*.mp4);;Усе (*)",
+        "dialog.confirm": "Пацверджанне", "dialog.reset.confirm": "Скінуць УСЁ?",
+        "dialog.export": "Захаваць", "dialog.import": "Загрузіць", "dialog.scarly": "Scarly (*.scarly)",
+        "hotkeys.title": "Гарачыя клавішы", "hotkeys.play": "Play/Pause", "hotkeys.seek": "Перамотка", "hotkeys.fullscreen": "Поўны экран",
+        "about.version": "Версія", "about.author": "Аўтар", "about.repo": "GitHub", "about.thanks": "Зроблена ❤️",
+        "btn.stop.tip": "Стоп", "btn.more": "Яшчэ", "btn.favorite": "⭐ У абранае", "btn.unfavorite": "Прыбраць з абранага",
+        "btn.info": "Інфармацыя", "player.buffering": "Загрузка...", "player.fps": "FPS", "player.new": "NEW", "player.favorite": "Абранае",
+        "settings.remember_position": "Запамінаць пазіцыю", "settings.remember_position.desc": "Працягваць з месца",
+        "settings.fps_overlay": "Паказваць FPS", "settings.fps_overlay.desc": "Лічыльнік кадраў",
+        "settings.video_bg": "Відэа-фон", "settings.video_bg.pick": "🎥 Выбраць", "settings.video_bg.reset": "Прыбраць",
+        "settings.cache": "Кэш", "settings.cache.clear": "🗑 Ачысціць кэш", "settings.cache.cleared": "Кэш ачышчаны",
+        "settings.check_updates": "🔄 Праверыць абнаўленні", "settings.check_updates.checking": "Праверка...",
+        "settings.check_updates.up_to_date": "У вас апошняя версія", "settings.check_updates.available": "Даступна новая версія: {v}",
+        "settings.check_updates.error": "Не ўдалося праверыць", "settings.danger": "Небяспечная зона",
+        "settings.reset.desc": "Выдаліць усе налады", "settings.reset.button": "⚠️ Скінуць усё",
+        "settings.assoc": "Асацыяцыя файлаў", "settings.assoc.desc": "Адкрываць відэа ў ScarlyPlayer",
+        "settings.assoc.button": "Прывязаць .mp4/.mkv", "settings.assoc.done": "Асацыяцыя ўсталявана",
+        "info.title_full": "Інфармацыя пра файл", "info.meta.title": "Назва", "info.meta.author": "Аўтар",
+        "info.meta.duration": "Працягласць", "info.meta.size": "Памер", "info.meta.path": "Шлях",
+        "info.meta.resolution": "Разрозненне", "info.meta.edit": "Рэдагаваць", "info.meta.save": "Захаваць",
+        "stats.title": "Статыстыка", "stats.total_hours": "Гадзін прагляду", "stats.total_videos": "Прагледжана відэа",
+        "stats.favorite_count": "У абраным", "stats.library_count": "У бібліятэцы", "stats.top_videos": "Топ-5",
+    },
     "de": {
-        "app.title":            "ScarlyPlayer",
-
-        "nav.player":           "Player",
-        "nav.library":          "Bibliothek",
-        "nav.settings":         "Einstellungen",
-        "nav.about":            "Über ScarlyPlayer",
-
-        "btn.open":             "📂  Datei öffnen",
-        "btn.play":             "▶  Abspielen",
-        "btn.pause":            "⏸  Pause",
-        "btn.stop":             "⏹",
-        "label.volume":         "🔊",
-
-        "dialog.openVideo":     "Video auswählen",
-        "dialog.videoFilt":     "Videos (*.mp4 *.mkv *.avi *.mov *.webm *.m4v *.flv *.wmv *.ts);;Alle Dateien (*)",
-        "dialog.confirm":       "Bestätigung",
-        "dialog.yes":           "Ja",
-        "dialog.no":            "Nein",
-        "dialog.cancel":        "Abbrechen",
-
-        "player.placeholder":   "Öffne ein Video, um zu starten",
-
-        "settings.lang":            "Sprache der Benutzeroberfläche",
-        "settings.appearance":      "Erscheinungsbild",
-        "settings.accent":          "Akzentfarbe",
-        "settings.accent.pick":     "Farbe wählen",
-        "settings.bg":              "Eigener Hintergrund",
-        "settings.bg.pick":         "🖼  Bild wählen",
-        "settings.bg.reset":        "Hintergrund entfernen",
-        "settings.bg.none":         "Standard",
-        "settings.folder":          "Standardordner",
-        "settings.folder.none":     "Nicht ausgewählt",
-        "settings.folder.pick":     "📁  Ordner wählen",
-        "settings.folder.reset":    "Zurücksetzen",
-        "settings.extended.soon":   "Erweiterte Einstellungen folgen bald...",
-
-        "library.title":        "Bibliothek",
-        "library.empty":        "Bibliothek ist leer — öffne eine Datei, um sie hinzuzufügen",
-        "library.add":          "➕  Dateien hinzufügen",
-        "library.clear":        "🗑  Bibliothek leeren",
-        "library.remove":       "Aus Bibliothek entfernen",
-        "library.play_hint":    "Doppelklick — abspielen",
-        "library.clear.confirm":"Gesamte Bibliothek leeren?",
-
-        "about.version":        "Version",
-        "about.author":         "Autor",
-        "about.repo":           "GitHub",
-        "about.thanks":         "Mit ❤️  auf PySide6 gemacht",
+        "nav.player": "Player", "nav.library": "Bibliothek", "nav.settings": "Einstellungen", "nav.about": "Über",
+        "btn.open": "📂 Datei öffnen", "btn.play": "▶ Abspielen", "btn.pause": "⏸ Pause", "btn.stop": "⏹",
+        "btn.fullscreen": "🖥️", "label.volume": "🔊",
+        "settings.lang": "Sprache", "settings.appearance": "Aussehen", "settings.accent": "Akzentfarbe",
+        "settings.accent.pick": "Wählen", "settings.bg": "Eigener Hintergrund", "settings.bg.pick": "🖼 Wählen",
+        "settings.bg.reset": "Entfernen", "settings.folder": "Standardordner", "settings.folder.none": "Nicht ausgewählt",
+        "settings.folder.pick": "📁 Wählen", "settings.folder.reset": "Zurücksetzen", "settings.theme": "Theme",
+        "settings.theme.dark": "🌙 Dunkel", "settings.theme.light": "☀️ Hell", "settings.misc": "Sonstiges",
+        "settings.reset": "Alles zurücksetzen", "settings.export": "Export", "settings.import": "Import",
+        "settings.audio": "Audiogerät", "library.title": "Bibliothek", "library.empty": "Leer",
+        "library.add": "➕ Hinzufügen", "library.clear": "🗑 Leeren", "library.remove": "Entfernen", "library.play_hint": "Doppelklick — Abspielen",
+        "library.sort": "Sortieren", "library.sort.date": "Nach Datum", "library.sort.name": "Nach Name", "library.filter": "Filter",
+        "library.filter.all": "Alle", "library.filter.recent": "Kürzlich", "library.filter.tagged": "Mit Tags",
+        "info.title": "Videoinfo", "info.close": "Schließen", "toast.open": "Öffnen", "toast.play": "Abspielen",
+        "dialog.openVideo": "Video wählen", "dialog.videoFilt": "Videos (*.mp4);;Alle (*)",
+        "dialog.confirm": "Bestätigung", "dialog.reset.confirm": "Alles zurücksetzen?",
+        "dialog.export": "Speichern", "dialog.import": "Laden", "dialog.scarly": "Scarly (*.scarly)",
+        "hotkeys.title": "Tastenkürzel", "hotkeys.play": "Play/Pause", "hotkeys.seek": "Spulen", "hotkeys.fullscreen": "Vollbild",
+        "about.version": "Version", "about.author": "Autor", "about.repo": "GitHub", "about.thanks": "Mit ❤️",
+        "btn.stop.tip": "Stopp", "btn.more": "Mehr", "btn.favorite": "⭐ Favorit", "btn.unfavorite": "Entfernen",
+        "btn.info": "Info", "player.buffering": "Lädt...", "player.fps": "FPS", "player.new": "NEU", "player.favorite": "Favorit",
+        "settings.remember_position": "Position merken", "settings.remember_position.desc": "Fortsetzen ab letzter Position",
+        "settings.fps_overlay": "FPS anzeigen", "settings.fps_overlay.desc": "Frame-Zähler in der Ecke",
+        "settings.video_bg": "Video-Hintergrund", "settings.video_bg.pick": "🎥 Video wählen", "settings.video_bg.reset": "Entfernen",
+        "settings.cache": "Cache", "settings.cache.clear": "🗑 Cache leeren", "settings.cache.cleared": "Cache geleert",
+        "settings.check_updates": "🔄 Auf Updates prüfen", "settings.check_updates.checking": "Prüfe...",
+        "settings.check_updates.up_to_date": "Sie haben die neueste Version", "settings.check_updates.available": "Neue Version verfügbar: {v}",
+        "settings.check_updates.error": "Update-Prüfung fehlgeschlagen", "settings.danger": "Gefahrenzone",
+        "settings.reset.desc": "Alle Einstellungen löschen", "settings.reset.button": "⚠️ Alles zurücksetzen",
+        "settings.assoc": "Dateizuordnung", "settings.assoc.desc": "Videos in ScarlyPlayer öffnen",
+        "settings.assoc.button": ".mp4/.mkv zuordnen", "settings.assoc.done": "Zuordnung festgelegt",
+        "info.title_full": "Dateiinfo", "info.meta.title": "Titel", "info.meta.author": "Autor",
+        "info.meta.duration": "Dauer", "info.meta.size": "Größe", "info.meta.path": "Pfad",
+        "info.meta.resolution": "Auflösung", "info.meta.edit": "Bearbeiten", "info.meta.save": "Speichern",
+        "stats.title": "Statistik", "stats.total_hours": "Stunden angesehen", "stats.total_videos": "Videos angesehen",
+        "stats.favorite_count": "Favoriten", "stats.library_count": "In Bibliothek", "stats.top_videos": "Top-5",
     },
-
-    # ============================================================
-    #  中文
-    # ============================================================
     "zh": {
-        "app.title":            "ScarlyPlayer",
-
-        "nav.player":           "播放器",
-        "nav.library":          "媒体库",
-        "nav.settings":         "设置",
-        "nav.about":            "关于 ScarlyPlayer",
-
-        "btn.open":             "📂  打开文件",
-        "btn.play":             "▶  播放",
-        "btn.pause":            "⏸  暂停",
-        "btn.stop":             "⏹",
-        "label.volume":         "🔊",
-
-        "dialog.openVideo":     "选择视频",
-        "dialog.videoFilt":     "视频 (*.mp4 *.mkv *.avi *.mov *.webm *.m4v *.flv *.wmv *.ts);;所有文件 (*)",
-        "dialog.confirm":       "确认",
-        "dialog.yes":           "是",
-        "dialog.no":            "否",
-        "dialog.cancel":        "取消",
-
-        "player.placeholder":   "打开视频以开始播放",
-
-        "settings.lang":            "界面语言",
-        "settings.appearance":      "外观",
-        "settings.accent":          "强调色",
-        "settings.accent.pick":     "选择颜色",
-        "settings.bg":              "自定义背景",
-        "settings.bg.pick":         "🖼  选择图片",
-        "settings.bg.reset":        "移除背景",
-        "settings.bg.none":         "默认",
-        "settings.folder":          "默认文件夹",
-        "settings.folder.none":     "未选择",
-        "settings.folder.pick":     "📁  选择文件夹",
-        "settings.folder.reset":    "重置",
-        "settings.extended.soon":   "高级设置即将推出...",
-
-        "library.title":        "媒体库",
-        "library.empty":        "媒体库为空 — 打开文件以添加",
-        "library.add":          "➕  添加文件",
-        "library.clear":        "🗑  清空媒体库",
-        "library.remove":       "从媒体库移除",
-        "library.play_hint":    "双击播放",
-        "library.clear.confirm":"清空整个媒体库？",
-
-        "about.version":        "版本",
-        "about.author":         "作者",
-        "about.repo":           "GitHub",
-        "about.thanks":         "使用 ❤️  在 PySide6 上制作",
+        "nav.player": "播放器", "nav.library": "媒体库", "nav.settings": "设置", "nav.about": "关于",
+        "btn.open": "📂 打开", "btn.play": "▶ 播放", "btn.pause": "⏸ 暂停", "btn.stop": "⏹",
+        "btn.fullscreen": "🖥️", "label.volume": "🔊",
+        "settings.lang": "语言", "settings.appearance": "外观", "settings.accent": "强调色",
+        "settings.accent.pick": "选择", "settings.bg": "自定义背景", "settings.bg.pick": "🖼 选择",
+        "settings.bg.reset": "移除", "settings.folder": "默认文件夹", "settings.folder.none": "未选择",
+        "settings.folder.pick": "📁 选择", "settings.folder.reset": "重置", "settings.theme": "主题",
+        "settings.theme.dark": "🌙 深色", "settings.theme.light": "☀️ 浅色", "settings.misc": "其他",
+        "settings.reset": "重置所有设置", "settings.export": "导出配置", "settings.import": "导入配置",
+        "settings.audio": "音频设备", "library.title": "媒体库", "library.empty": "空",
+        "library.add": "➕ 添加", "library.clear": "🗑 清空", "library.remove": "删除", "library.play_hint": "双击播放",
+        "library.sort": "排序", "library.sort.date": "按日期", "library.sort.name": "按名称", "library.filter": "过滤",
+        "library.filter.all": "全部", "library.filter.recent": "最近", "library.filter.tagged": "有标签",
+        "info.title": "视频信息", "info.close": "关闭", "toast.open": "打开", "toast.play": "播放",
+        "dialog.openVideo": "选择视频", "dialog.videoFilt": "视频 (*.mp4);;所有 (*)",
+        "dialog.confirm": "确认", "dialog.reset.confirm": "重置所有设置？",
+        "dialog.export": "保存", "dialog.import": "加载", "dialog.scarly": "Scarly (*.scarly)",
+        "hotkeys.title": "快捷键", "hotkeys.play": "播放/暂停", "hotkeys.seek": "快进/快退", "hotkeys.fullscreen": "全屏",
+        "about.version": "版本", "about.author": "作者", "about.repo": "GitHub", "about.thanks": "使用 ❤️ 制作",
+        "btn.stop.tip": "停止", "btn.more": "更多", "btn.favorite": "⭐ 收藏", "btn.unfavorite": "取消收藏",
+        "btn.info": "信息", "player.buffering": "加载中...", "player.fps": "FPS", "player.new": "新", "player.favorite": "收藏",
+        "settings.remember_position": "记住位置", "settings.remember_position.desc": "从上次位置继续",
+        "settings.fps_overlay": "显示 FPS", "settings.fps_overlay.desc": "角落帧数",
+        "settings.video_bg": "视频背景", "settings.video_bg.pick": "🎥 选择视频", "settings.video_bg.reset": "移除",
+        "settings.cache": "缓存", "settings.cache.clear": "🗑 清除缓存", "settings.cache.cleared": "缓存已清除",
+        "settings.check_updates": "🔄 检查更新", "settings.check_updates.checking": "检查中...",
+        "settings.check_updates.up_to_date": "已是最新版本", "settings.check_updates.available": "有新版本：{v}",
+        "settings.check_updates.error": "检查失败", "settings.danger": "危险区",
+        "settings.reset.desc": "删除所有设置", "settings.reset.button": "⚠️ 重置",
+        "settings.assoc": "文件关联", "settings.assoc.desc": "用 ScarlyPlayer 打开视频",
+        "settings.assoc.button": "关联 .mp4/.mkv", "settings.assoc.done": "关联已设置",
+        "info.title_full": "文件信息", "info.meta.title": "标题", "info.meta.author": "作者",
+        "info.meta.duration": "时长", "info.meta.size": "大小", "info.meta.path": "路径",
+        "info.meta.resolution": "分辨率", "info.meta.edit": "编辑", "info.meta.save": "保存",
+        "stats.title": "统计", "stats.total_hours": "总观看小时", "stats.total_videos": "已观看视频",
+        "stats.favorite_count": "收藏数", "stats.library_count": "库中数量", "stats.top_videos": "播放前5",
     },
-
-    # ============================================================
-    #  日本語
-    # ============================================================
     "ja": {
-        "app.title":            "ScarlyPlayer",
-
-        "nav.player":           "プレイヤー",
-        "nav.library":          "ライブラリ",
-        "nav.settings":         "設定",
-        "nav.about":            "ScarlyPlayerについて",
-
-        "btn.open":             "📂  ファイルを開く",
-        "btn.play":             "▶  再生",
-        "btn.pause":            "⏸  一時停止",
-        "btn.stop":             "⏹",
-        "label.volume":         "🔊",
-
-        "dialog.openVideo":     "動画を選択",
-        "dialog.videoFilt":     "動画 (*.mp4 *.mkv *.avi *.mov *.webm *.m4v *.flv *.wmv *.ts);;すべてのファイル (*)",
-        "dialog.confirm":       "確認",
-        "dialog.yes":           "はい",
-        "dialog.no":            "いいえ",
-        "dialog.cancel":        "キャンセル",
-
-        "player.placeholder":   "動画を開いて開始",
-
-        "settings.lang":            "言語",
-        "settings.appearance":      "外観",
-        "settings.accent":          "アクセントカラー",
-        "settings.accent.pick":     "色を選択",
-        "settings.bg":              "カスタム背景",
-        "settings.bg.pick":         "🖼  画像を選択",
-        "settings.bg.reset":        "背景を削除",
-        "settings.bg.none":         "デフォルト",
-        "settings.folder":          "デフォルトフォルダ",
-        "settings.folder.none":     "未選択",
-        "settings.folder.pick":     "📁  選択",
-        "settings.folder.reset":    "リセット",
-        "settings.extended.soon":   "詳細設定は近日公開...",
-
-        "library.title":        "ライブラリ",
-        "library.empty":        "ライブラリは空です — ファイルを開いて追加してください",
-        "library.add":          "➕  追加",
-        "library.clear":        "🗑  クリア",
-        "library.remove":       "ライブラリから削除",
-        "library.play_hint":    "ダブルクリックで再生",
-        "library.clear.confirm":"ライブラリをすべてクリアしますか？",
-
-        "about.version":        "バージョン",
-        "about.author":         "作者",
-        "about.repo":           "GitHub",
-        "about.thanks":         "PySide6で作られました ❤️",
+        "nav.player": "プレイヤー", "nav.library": "ライブラリ", "nav.settings": "設定", "nav.about": "情報",
+        "btn.open": "📂 開く", "btn.play": "▶ 再生", "btn.pause": "⏸ 一時停止", "btn.stop": "⏹",
+        "btn.fullscreen": "🖥️", "label.volume": "🔊",
+        "settings.lang": "言語", "settings.appearance": "外観", "settings.accent": "アクセントカラー",
+        "settings.accent.pick": "選択", "settings.bg": "カスタム背景", "settings.bg.pick": "🖼 選択",
+        "settings.bg.reset": "削除", "settings.folder": "デフォルトフォルダ", "settings.folder.none": "未選択",
+        "settings.folder.pick": "📁 選択", "settings.folder.reset": "リセット", "settings.theme": "テーマ",
+        "settings.theme.dark": "🌙 ダーク", "settings.theme.light": "☀️ ライト", "settings.misc": "その他",
+        "settings.reset": "すべてリセット", "settings.export": "エクスポート", "settings.import": "インポート",
+        "settings.audio": "オーディオデバイス", "library.title": "ライブラリ", "library.empty": "空",
+        "library.add": "➕ 追加", "library.clear": "🗑 クリア", "library.remove": "削除", "library.play_hint": "ダブルクリックで再生",
+        "library.sort": "並べ替え", "library.sort.date": "日付順", "library.sort.name": "名前順", "library.filter": "フィルター",
+        "library.filter.all": "すべて", "library.filter.recent": "最近", "library.filter.tagged": "タグ付き",
+        "info.title": "動画情報", "info.close": "閉じる", "toast.open": "開く", "toast.play": "再生",
+        "dialog.openVideo": "動画を選択", "dialog.videoFilt": "動画 (*.mp4);;すべて (*)",
+        "dialog.confirm": "確認", "dialog.reset.confirm": "すべてリセットしますか？",
+        "dialog.export": "保存", "dialog.import": "読み込み", "dialog.scarly": "Scarly (*.scarly)",
+        "hotkeys.title": "ショートカット", "hotkeys.play": "再生/一時停止", "hotkeys.seek": "シーク", "hotkeys.fullscreen": "全画面",
+        "about.version": "バージョン", "about.author": "作者", "about.repo": "GitHub", "about.thanks": "PySide6 で作成 ❤️",
+        "btn.stop.tip": "停止", "btn.more": "その他", "btn.favorite": "⭐ お気に入り", "btn.unfavorite": "解除",
+        "btn.info": "情報", "player.buffering": "読み込み中...", "player.fps": "FPS", "player.new": "新", "player.favorite": "お気に入り",
+        "settings.remember_position": "位置を記憶", "settings.remember_position.desc": "前回位置から再開",
+        "settings.fps_overlay": "FPS 表示", "settings.fps_overlay.desc": "隅にフレーム数",
+        "settings.video_bg": "動画背景", "settings.video_bg.pick": "🎥 選択", "settings.video_bg.reset": "削除",
+        "settings.cache": "キャッシュ", "settings.cache.clear": "🗑 キャッシュ削除", "settings.cache.cleared": "削除完了",
+        "settings.check_updates": "🔄 更新確認", "settings.check_updates.checking": "確認中...",
+        "settings.check_updates.up_to_date": "最新版です", "settings.check_updates.available": "新しいバージョン: {v}",
+        "settings.check_updates.error": "確認失敗", "settings.danger": "危険",
+        "settings.reset.desc": "すべての設定を削除", "settings.reset.button": "⚠️ リセット",
+        "settings.assoc": "ファイル関連付け", "settings.assoc.desc": "ScarlyPlayer で開く",
+        "settings.assoc.button": ".mp4/.mkv に関連付け", "settings.assoc.done": "関連付け完了",
+        "info.title_full": "ファイル情報", "info.meta.title": "タイトル", "info.meta.author": "作者",
+        "info.meta.duration": "長さ", "info.meta.size": "サイズ", "info.meta.path": "パス",
+        "info.meta.resolution": "解像度", "info.meta.edit": "編集", "info.meta.save": "保存",
+        "stats.title": "統計", "stats.total_hours": "総視聴時間", "stats.total_videos": "視聴本数",
+        "stats.favorite_count": "お気に入り", "stats.library_count": "ライブラリ内", "stats.top_videos": "トップ5",
     },
-
-    # ============================================================
-    #  FRANÇAIS
-    # ============================================================
     "fr": {
-        "app.title":            "ScarlyPlayer",
-
-        "nav.player":           "Lecteur",
-        "nav.library":          "Bibliothèque",
-        "nav.settings":         "Paramètres",
-        "nav.about":            "À propos",
-
-        "btn.open":             "📂  Ouvrir un fichier",
-        "btn.play":             "▶  Lire",
-        "btn.pause":            "⏸  Pause",
-        "btn.stop":             "⏹",
-        "label.volume":         "🔊",
-
-        "dialog.openVideo":     "Choisir une vidéo",
-        "dialog.videoFilt":     "Vidéos (*.mp4 *.mkv *.avi *.mov *.webm *.m4v *.flv *.wmv *.ts);;Tous les fichiers (*)",
-        "dialog.confirm":       "Confirmation",
-        "dialog.yes":           "Oui",
-        "dialog.no":            "Non",
-        "dialog.cancel":        "Annuler",
-
-        "player.placeholder":   "Ouvrez une vidéo pour commencer",
-
-        "settings.lang":            "Langue",
-        "settings.appearance":      "Apparence",
-        "settings.accent":          "Couleur d'accent",
-        "settings.accent.pick":     "Choisir la couleur",
-        "settings.bg":              "Fond personnalisé",
-        "settings.bg.pick":         "🖼  Choisir une image",
-        "settings.bg.reset":        "Supprimer le fond",
-        "settings.bg.none":         "Par défaut",
-        "settings.folder":          "Dossier par défaut",
-        "settings.folder.none":     "Non sélectionné",
-        "settings.folder.pick":     "📁  Choisir",
-        "settings.folder.reset":    "Réinitialiser",
-        "settings.extended.soon":   "Paramètres avancés bientôt...",
-
-        "library.title":        "Bibliothèque",
-        "library.empty":        "La bibliothèque est vide — ouvrez un fichier pour l'ajouter",
-        "library.add":          "➕  Ajouter",
-        "library.clear":        "🗑  Vider",
-        "library.remove":       "Retirer de la bibliothèque",
-        "library.play_hint":    "Double-cliquez pour lire",
-        "library.clear.confirm":"Vider toute la bibliothèque ?",
-
-        "about.version":        "Version",
-        "about.author":         "Auteur",
-        "about.repo":           "GitHub",
-        "about.thanks":         "Fait avec ❤️  sur PySide6",
+        "nav.player": "Lecteur", "nav.library": "Bibliothèque", "nav.settings": "Paramètres", "nav.about": "À propos",
+        "btn.open": "📂 Ouvrir", "btn.play": "▶ Lire", "btn.pause": "⏸ Pause", "btn.stop": "⏹",
+        "btn.fullscreen": "🖥️", "label.volume": "🔊",
+        "settings.lang": "Langue", "settings.appearance": "Apparence", "settings.accent": "Couleur d'accent",
+        "settings.accent.pick": "Choisir", "settings.bg": "Fond personnalisé", "settings.bg.pick": "🖼 Choisir",
+        "settings.bg.reset": "Retirer", "settings.folder": "Dossier", "settings.folder.none": "Non sélectionné",
+        "settings.folder.pick": "📁 Choisir", "settings.folder.reset": "Réinitialiser", "settings.theme": "Thème",
+        "settings.theme.dark": "🌙 Sombre", "settings.theme.light": "☀️ Clair", "settings.misc": "Divers",
+        "settings.reset": "Tout réinitialiser", "settings.export": "Exporter", "settings.import": "Importer",
+        "settings.audio": "Périphérique audio", "library.title": "Bibliothèque", "library.empty": "Vide",
+        "library.add": "➕ Ajouter", "library.clear": "🗑 Vider", "library.remove": "Supprimer", "library.play_hint": "Double-clic pour lire",
+        "library.sort": "Trier", "library.sort.date": "Par date", "library.sort.name": "Par nom", "library.filter": "Filtrer",
+        "library.filter.all": "Tout", "library.filter.recent": "Récent", "library.filter.tagged": "Avec tags",
+        "info.title": "Infos vidéo", "info.close": "Fermer", "toast.open": "Ouvrir", "toast.play": "Lire",
+        "dialog.openVideo": "Choisir une vidéo", "dialog.videoFilt": "Vidéos (*.mp4);;Tous (*)",
+        "dialog.confirm": "Confirmation", "dialog.reset.confirm": "Tout réinitialiser ?",
+        "dialog.export": "Enregistrer", "dialog.import": "Charger", "dialog.scarly": "Scarly (*.scarly)",
+        "hotkeys.title": "Raccourcis", "hotkeys.play": "Lecture/Pause", "hotkeys.seek": "Navigation", "hotkeys.fullscreen": "Plein écran",
+        "about.version": "Version", "about.author": "Auteur", "about.repo": "GitHub", "about.thanks": "Fait avec ❤️",
+        "btn.stop.tip": "Arrêt", "btn.more": "Plus", "btn.favorite": "⭐ Favori", "btn.unfavorite": "Retirer",
+        "btn.info": "Infos", "player.buffering": "Chargement...", "player.fps": "FPS", "player.new": "NOUVEAU", "player.favorite": "Favori",
+        "settings.remember_position": "Mémoriser la position", "settings.remember_position.desc": "Reprendre où on s'est arrêté",
+        "settings.fps_overlay": "Afficher les FPS", "settings.fps_overlay.desc": "Compteur dans le coin",
+        "settings.video_bg": "Fond vidéo", "settings.video_bg.pick": "🎥 Choisir", "settings.video_bg.reset": "Retirer",
+        "settings.cache": "Cache", "settings.cache.clear": "🗑 Vider le cache", "settings.cache.cleared": "Cache vidé",
+        "settings.check_updates": "🔄 Vérifier les MAJ", "settings.check_updates.checking": "Vérification...",
+        "settings.check_updates.up_to_date": "Vous êtes à jour", "settings.check_updates.available": "Nouvelle version : {v}",
+        "settings.check_updates.error": "Échec de la vérification", "settings.danger": "Zone dangereuse",
+        "settings.reset.desc": "Supprimer tous les paramètres", "settings.reset.button": "⚠️ Tout réinitialiser",
+        "settings.assoc": "Association de fichiers", "settings.assoc.desc": "Ouvrir les vidéos dans ScarlyPlayer",
+        "settings.assoc.button": "Associer .mp4/.mkv", "settings.assoc.done": "Association définie",
+        "info.title_full": "Infos fichier", "info.meta.title": "Titre", "info.meta.author": "Auteur",
+        "info.meta.duration": "Durée", "info.meta.size": "Taille", "info.meta.path": "Chemin",
+        "info.meta.resolution": "Résolution", "info.meta.edit": "Éditer", "info.meta.save": "Sauvegarder",
+        "stats.title": "Statistiques", "stats.total_hours": "Heures regardées", "stats.total_videos": "Vidéos vues",
+        "stats.favorite_count": "Favoris", "stats.library_count": "Dans bibliothèque", "stats.top_videos": "Top 5",
+    },
+    "es": {
+        "nav.player": "Reproductor", "nav.library": "Biblioteca", "nav.settings": "Ajustes", "nav.about": "Acerca de",
+        "btn.open": "📂 Abrir", "btn.play": "▶ Reproducir", "btn.pause": "⏸ Pausa", "btn.stop": "⏹",
+        "btn.fullscreen": "🖥️", "label.volume": "🔊",
+        "settings.lang": "Idioma", "settings.appearance": "Apariencia", "settings.accent": "Color de acento",
+        "settings.accent.pick": "Elegir", "settings.bg": "Fondo", "settings.bg.pick": "🖼 Elegir",
+        "settings.bg.reset": "Quitar", "settings.folder": "Carpeta", "settings.folder.none": "No elegida",
+        "settings.folder.pick": "📁 Elegir", "settings.folder.reset": "Reiniciar", "settings.theme": "Tema",
+        "settings.theme.dark": "🌙 Oscuro", "settings.theme.light": "☀️ Claro", "settings.misc": "Varios",
+        "settings.reset": "Reiniciar todo", "settings.export": "Exportar", "settings.import": "Importar",
+        "settings.audio": "Dispositivo de audio", "library.title": "Biblioteca", "library.empty": "Vacía",
+        "library.add": "➕ Añadir", "library.clear": "🗑 Limpiar", "library.remove": "Eliminar", "library.play_hint": "Doble clic para reproducir",
+        "library.sort": "Ordenar", "library.sort.date": "Por fecha", "library.sort.name": "Por nombre", "library.filter": "Filtro",
+        "library.filter.all": "Todos", "library.filter.recent": "Recientes", "library.filter.tagged": "Con etiquetas",
+        "info.title": "Info del video", "info.close": "Cerrar", "toast.open": "Abrir", "toast.play": "Reproducir",
+        "dialog.openVideo": "Elegir video", "dialog.videoFilt": "Videos (*.mp4);;Todos (*)",
+        "dialog.confirm": "Confirmación", "dialog.reset.confirm": "¿Reiniciar todo?",
+        "dialog.export": "Guardar", "dialog.import": "Cargar", "dialog.scarly": "Scarly (*.scarly)",
+        "hotkeys.title": "Atajos", "hotkeys.play": "Play/Pausa", "hotkeys.seek": "Buscar", "hotkeys.fullscreen": "Pantalla completa",
+        "about.version": "Versión", "about.author": "Autor", "about.repo": "GitHub", "about.thanks": "Hecho con ❤️",
+        "btn.stop.tip": "Detener", "btn.more": "Más", "btn.favorite": "⭐ Favorito", "btn.unfavorite": "Quitar",
+        "btn.info": "Info", "player.buffering": "Cargando...", "player.fps": "FPS", "player.new": "NUEVO", "player.favorite": "Favorito",
+        "settings.remember_position": "Recordar posición", "settings.remember_position.desc": "Continuar desde donde se dejó",
+        "settings.fps_overlay": "Mostrar FPS", "settings.fps_overlay.desc": "Contador en la esquina",
+        "settings.video_bg": "Fondo de video", "settings.video_bg.pick": "🎥 Elegir", "settings.video_bg.reset": "Quitar",
+        "settings.cache": "Caché", "settings.cache.clear": "🗑 Limpiar caché", "settings.cache.cleared": "Caché limpiada",
+        "settings.check_updates": "🔄 Buscar actualizaciones", "settings.check_updates.checking": "Buscando...",
+        "settings.check_updates.up_to_date": "Ya está actualizado", "settings.check_updates.available": "Nueva versión: {v}",
+        "settings.check_updates.error": "No se pudo verificar", "settings.danger": "Zona peligrosa",
+        "settings.reset.desc": "Eliminar todos los ajustes", "settings.reset.button": "⚠️ Reiniciar todo",
+        "settings.assoc": "Asociación de archivos", "settings.assoc.desc": "Abrir videos en ScarlyPlayer",
+        "settings.assoc.button": "Asociar .mp4/.mkv", "settings.assoc.done": "Asociación establecida",
+        "info.title_full": "Info del archivo", "info.meta.title": "Título", "info.meta.author": "Autor",
+        "info.meta.duration": "Duración", "info.meta.size": "Tamaño", "info.meta.path": "Ruta",
+        "info.meta.resolution": "Resolución", "info.meta.edit": "Editar", "info.meta.save": "Guardar",
+        "stats.title": "Estadísticas", "stats.total_hours": "Horas vistas", "stats.total_videos": "Videos vistos",
+        "stats.favorite_count": "Favoritos", "stats.library_count": "En biblioteca", "stats.top_videos": "Top 5",
+    },
+    "pt": {
+        "nav.player": "Player", "nav.library": "Biblioteca", "nav.settings": "Configurações", "nav.about": "Sobre",
+        "btn.open": "📂 Abrir", "btn.play": "▶ Reproduzir", "btn.pause": "⏸ Pausar", "btn.stop": "⏹",
+        "btn.fullscreen": "🖥️", "label.volume": "🔊",
+        "settings.lang": "Idioma", "settings.appearance": "Aparência", "settings.accent": "Cor de destaque",
+        "settings.accent.pick": "Escolher", "settings.bg": "Fundo", "settings.bg.pick": "🖼 Escolher",
+        "settings.bg.reset": "Remover", "settings.folder": "Pasta", "settings.folder.none": "Não escolhida",
+        "settings.folder.pick": "📁 Escolher", "settings.folder.reset": "Redefinir", "settings.theme": "Tema",
+        "settings.theme.dark": "🌙 Escuro", "settings.theme.light": "☀️ Claro", "settings.misc": "Diversos",
+        "settings.reset": "Redefinir tudo", "settings.export": "Exportar", "settings.import": "Importar",
+        "settings.audio": "Dispositivo de áudio", "library.title": "Biblioteca", "library.empty": "Vazia",
+        "library.add": "➕ Adicionar", "library.clear": "🗑 Limpar", "library.remove": "Remover", "library.play_hint": "Duplo clique para reproduzir",
+        "library.sort": "Ordenar", "library.sort.date": "Por data", "library.sort.name": "Por nome", "library.filter": "Filtro",
+        "library.filter.all": "Todos", "library.filter.recent": "Recentes", "library.filter.tagged": "Com tags",
+        "info.title": "Info do vídeo", "info.close": "Fechar", "toast.open": "Abrir", "toast.play": "Reproduzir",
+        "dialog.openVideo": "Escolher vídeo", "dialog.videoFilt": "Vídeos (*.mp4);;Todos (*)",
+        "dialog.confirm": "Confirmação", "dialog.reset.confirm": "Redefinir tudo?",
+        "dialog.export": "Salvar", "dialog.import": "Carregar", "dialog.scarly": "Scarly (*.scarly)",
+        "hotkeys.title": "Atalhos", "hotkeys.play": "Play/Pause", "hotkeys.seek": "Buscar", "hotkeys.fullscreen": "Tela cheia",
+        "about.version": "Versão", "about.author": "Autor", "about.repo": "GitHub", "about.thanks": "Feito com ❤️",
+        "btn.stop.tip": "Parar", "btn.more": "Mais", "btn.favorite": "⭐ Favorito", "btn.unfavorite": "Remover",
+        "btn.info": "Info", "player.buffering": "Carregando...", "player.fps": "FPS", "player.new": "NOVO", "player.favorite": "Favorito",
+        "settings.remember_position": "Lembrar posição", "settings.remember_position.desc": "Continuar de onde parou",
+        "settings.fps_overlay": "Mostrar FPS", "settings.fps_overlay.desc": "Contador no canto",
+        "settings.video_bg": "Fundo de vídeo", "settings.video_bg.pick": "🎥 Escolher", "settings.video_bg.reset": "Remover",
+        "settings.cache": "Cache", "settings.cache.clear": "🗑 Limpar cache", "settings.cache.cleared": "Cache limpo",
+        "settings.check_updates": "🔄 Verificar atualizações", "settings.check_updates.checking": "Verificando...",
+        "settings.check_updates.up_to_date": "Você está atualizado", "settings.check_updates.available": "Nova versão: {v}",
+        "settings.check_updates.error": "Falha ao verificar", "settings.danger": "Zona perigosa",
+        "settings.reset.desc": "Excluir todas as configurações", "settings.reset.button": "⚠️ Redefinir tudo",
+        "settings.assoc": "Associação de arquivos", "settings.assoc.desc": "Abrir vídeos no ScarlyPlayer",
+        "settings.assoc.button": "Associar .mp4/.mkv", "settings.assoc.done": "Associação definida",
+        "info.title_full": "Info do arquivo", "info.meta.title": "Título", "info.meta.author": "Autor",
+        "info.meta.duration": "Duração", "info.meta.size": "Tamanho", "info.meta.path": "Caminho",
+        "info.meta.resolution": "Resolução", "info.meta.edit": "Editar", "info.meta.save": "Salvar",
+        "stats.title": "Estatísticas", "stats.total_hours": "Horas vistas", "stats.total_videos": "Vídeos vistos",
+        "stats.favorite_count": "Favoritos", "stats.library_count": "Na biblioteca", "stats.top_videos": "Top 5",
     },
 }
 
 
-# ============================================================
-#  TRANSLATOR
-# ============================================================
 class Translator(QObject):
-    """Глобальный переводчик. UI подписывается на languageChanged()."""
-
     languageChanged = Signal(str)
-
     def __init__(self, lang: str = DEFAULT_LANG):
         super().__init__()
         self._lang = lang if lang in TRANSLATIONS else DEFAULT_LANG
-
     @property
     def language(self) -> str:
         return self._lang
-
-    def set_language(self, lang: str) -> None:
+    def set_language(self, lang: str):
         if lang in TRANSLATIONS and lang != self._lang:
             self._lang = lang
             self.languageChanged.emit(lang)
-
     def t(self, key: str) -> str:
-        return (
-            TRANSLATIONS.get(self._lang, {}).get(key)
-            or TRANSLATIONS[DEFAULT_LANG].get(key)
-            or key
-        )
+        return TRANSLATIONS.get(self._lang, {}).get(key) or TRANSLATIONS[DEFAULT_LANG].get(key) or key
 
 
-# ============================================================
-#  СИНГЛТОН
-# ============================================================
 _tr: Translator | None = None
-
-
 def translator() -> Translator:
     global _tr
     if _tr is None:
         _tr = Translator()
     return _tr
-
-
 def tr(key: str) -> str:
     return translator().t(key)
