@@ -1,9 +1,9 @@
 # ui/main_window.py
-"""Главное окно ScarlyPlayer v1.2.22."""
+"""Главное окно ScarlyPlayer v1.2.333."""
 
 import os
 from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QTimer, QUrl
-from PySide6.QtGui import QPainter, QPixmap, QColor, QKeySequence, QShortcut, QCursor
+from PySide6.QtGui import QPainter, QPixmap, QColor, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QFrame,
     QGraphicsOpacityEffect, QStackedWidget, QApplication,
@@ -16,15 +16,61 @@ from core.i18n import translator, tr, APP_VERSION
 from core.player import ScarlyPlayer
 from core.settings import settings
 from core.theme import apply_theme
+from core.icons import load_svg_icon, resource_path
 from ui.toast import Toast
 from ui.info_dialog import InfoDialog
+from ui.player_page import PlayerPage
 
 from ui.title_bar import TitleBar
 from ui.sidebar import Sidebar
-from ui.control_panel import ControlPanel
 from ui.library_page import LibraryPage
 from ui.settings_page import SettingsPage
 from ui.about_page import AboutPage
+
+
+class StatusBar(QWidget):
+    """E1: статусбар внизу окна."""
+
+    def __init__(self):
+        super().__init__()
+        self.setObjectName("StatusBar")
+        self.setFixedHeight(28)
+
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(12, 0, 12, 0)
+        lay.setSpacing(20)
+
+        self.lbl_file = QLabel("—")
+        self.lbl_time = QLabel("")
+        self.lbl_speed = QLabel("1.0x")
+        self.lbl_aspect = QLabel("Fit")
+
+        for lbl in (self.lbl_file, self.lbl_time, self.lbl_speed, self.lbl_aspect):
+            lbl.setStyleSheet("color: #A0A0AB; font-size: 11px; background: transparent;")
+
+        lay.addWidget(self.lbl_file, 1)
+        lay.addWidget(self.lbl_time)
+        lay.addWidget(QLabel("│"))
+        lay.addWidget(self.lbl_speed)
+        lay.addWidget(QLabel("│"))
+        lay.addWidget(self.lbl_aspect)
+
+        # Разделители
+        for sep in self.findChildren(QLabel):
+            if sep.text() == "│":
+                sep.setStyleSheet("color: #2A2A33; font-size: 11px;")
+
+    def set_file(self, name: str):
+        self.lbl_file.setText(name if name else "—")
+
+    def set_time(self, text: str):
+        self.lbl_time.setText(text)
+
+    def set_speed(self, text: str):
+        self.lbl_speed.setText(text)
+
+    def set_aspect(self, text: str):
+        self.lbl_aspect.setText(text)
 
 
 class MainWindow(QMainWindow):
@@ -41,6 +87,7 @@ class MainWindow(QMainWindow):
 
         self._playlist: list[str] = []
         self._current_index: int = -1
+        self._current_filename: str = ""
 
         # Видео-фон
         self._bg_player: QMediaPlayer | None = None
@@ -76,11 +123,12 @@ class MainWindow(QMainWindow):
         self.sidebar.setFixedWidth(220 if self._sidebar_visible else 0)
         body_layout.addWidget(self.sidebar)
 
+        # Стек
         self.stack = QStackedWidget()
         self.stack.setStyleSheet("background: transparent;")
         body_layout.addWidget(self.stack, 1)
 
-        self._player_page = self._build_player_page()
+        self._player_page = PlayerPage()
         self._library_page = LibraryPage()
         self._settings_page = SettingsPage()
         self._about_page = AboutPage()
@@ -90,7 +138,13 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self._settings_page)
         self.stack.addWidget(self._about_page)
 
+        # E1: статусбар
+        self.status_bar = StatusBar()
+        outer.addWidget(self.status_bar)
+
+        # Сигналы
         self.sidebar.pageRequested.connect(self._on_nav)
+        self._player_page.openRequested.connect(self._on_open)
         self._library_page.playRequested.connect(self._on_open)
         self._library_page.playAllRequested.connect(self._play_all)
         self._settings_page.languageChanged.connect(self._on_language_changed)
@@ -98,86 +152,62 @@ class MainWindow(QMainWindow):
         self._settings_page.resetRequested.connect(self._on_reset_all)
         self._settings_page.bgVideoChanged.connect(self._setup_video_background)
 
-    def _build_player_page(self) -> QWidget:
-        page = QWidget()
-        page.setStyleSheet("background: transparent;")
-        layout = QVBoxLayout(page)
-        layout.setContentsMargins(16, 16, 16, 0)
-        layout.setSpacing(12)
-
-        # Видео-фрейм с оверлеями
-        video_frame = QFrame()
-        video_frame.setObjectName("VideoContainer")
-        video_frame.setStyleSheet("QFrame#VideoContainer { background: #000000; border-radius: 12px; }")
-        vf = QVBoxLayout(video_frame)
-        vf.setContentsMargins(0, 0, 0, 0)
-
-        self.video_widget = QVideoWidget()
-        vf.addWidget(self.video_widget)
-
-        self._opacity = QGraphicsOpacityEffect(self.video_widget)
-        self.video_widget.setGraphicsEffect(self._opacity)
-        self._opacity.setOpacity(1.0)
-
-        # FPS-оверлей (поверх видео)
-        self.fps_label = QLabel(video_frame)
-        self.fps_label.setText("")
-        self.fps_label.setStyleSheet(
-            "background: rgba(0,0,0,180); color: #0F0; "
-            "padding: 4px 8px; border-radius: 4px; font-family: Consolas; font-size: 11px;"
-        )
-        self.fps_label.move(10, 10)
-        self.fps_label.hide()
-
-        # Индикатор буферизации
-        self.buffering_label = QLabel(video_frame)
-        self.buffering_label.setText(tr("player.buffering"))
-        self.buffering_label.setStyleSheet(
-            "background: rgba(0,0,0,200); color: white; "
-            "padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600;"
-        )
-        self.buffering_label.setAlignment(Qt.AlignCenter)
-        self.buffering_label.hide()
-
-        layout.addWidget(video_frame, 1)
-
-        self.controls = ControlPanel()
-        self.controls.fullscreenToggled.connect(self._toggle_fullscreen)
-        self.controls.infoRequested.connect(self._show_video_info)
-        layout.addWidget(self.controls)
-        return page
-
     def _setup_player_connections(self):
         self.player = ScarlyPlayer(self)
-        self.player.attach_video_widget(self.video_widget)
+        self.player.attach_video_widget(self._player_page.video_widget)
 
+        controls = self._player_page.controls
         vol = settings().get_volume()
-        self.controls.volume.setValue(vol)
+        controls.volume.setValue(vol)
         self.player.set_volume(vol)
 
-        self.controls.openRequested.connect(self._on_open)
-        self.controls.playToggled.connect(self.player.toggle)
-        self.controls.seeked.connect(self.player.set_position)
-        self.controls.volumeChanged.connect(self._on_volume)
-        self.controls.btn_stop.clicked.connect(self.player.stop)
-        self.controls.speedChanged.connect(self.player.set_playback_rate)
-        self.controls.aspectChanged.connect(self.player.set_aspect_mode)
+        self._player_page.playToggled.connect(self.player.toggle)
+        self._player_page.seeked.connect(self.player.set_position)
+        self._player_page.volumeChanged.connect(self._on_volume)
+        self._player_page.speedChanged.connect(self._on_speed_changed)
+        self._player_page.aspectChanged.connect(self._on_aspect_changed)
+        self._player_page.fullscreenToggled.connect(self._toggle_fullscreen)
+        self._player_page.infoRequested.connect(self._show_video_info)
 
-        self.player.durationChanged.connect(self.controls.set_duration)
-        self.player.positionChanged.connect(self.controls.set_position)
-        self.player.playingChanged.connect(self.controls.set_playing)
+        controls.btn_stop.clicked.connect(self.player.stop)
+
+        self.player.durationChanged.connect(controls.set_duration)
+        self.player.positionChanged.connect(self._on_position)
+        self.player.playingChanged.connect(controls.set_playing)
         self.player.mediaEnded.connect(self._play_next)
         self.player.bufferingChanged.connect(self._on_buffering)
         self.player.fpsUpdated.connect(self._on_fps)
 
-        # Показывать/скрывать FPS
         if settings().get_fps_overlay():
-            self.fps_label.show()
+            self._player_page.fps_label.show()
+
+    def _on_position(self, ms: int):
+        self._player_page.controls.set_position(ms)
+        # E1: обновляем статусбар
+        dur = self.player._player.duration()
+        if dur > 0:
+            s = ms // 1000
+            m, s = divmod(s, 60)
+            h, m = divmod(m, 60)
+            tstr = f"{h}:{m:02d}:{s:02d}" if h else f"{m:02d}:{s:02d}"
+            self.status_bar.set_time(f"⏱ {tstr}")
+
+    def _on_speed_changed(self, rate: float):
+        self.player.set_playback_rate(rate)
+        self.status_bar.set_speed(f"{rate:.2f}x")
+
+    def _on_aspect_changed(self, mode: str):
+        self.player.set_aspect_mode(mode)
+        self.status_bar.set_aspect(mode.capitalize())
 
     def _setup_tray(self):
         self.tray = QSystemTrayIcon(self)
-        icon = self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay)
-        self.tray.setIcon(icon)
+        icon_path = resource_path("assets/icon.png")
+        from PySide6.QtGui import QIcon
+        if os.path.exists(icon_path):
+            self.tray.setIcon(QIcon(icon_path))
+        else:
+            self.tray.setIcon(self.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay))
         self.tray.setToolTip("ScarlyPlayer")
 
         menu = QMenu()
@@ -201,7 +231,6 @@ class MainWindow(QMainWindow):
     # ============================================================
     def _setup_video_background(self):
         path = settings().get_bg_video()
-        # Останавливаем предыдущий
         if self._bg_player:
             self._bg_player.stop()
             self._bg_player = None
@@ -209,7 +238,6 @@ class MainWindow(QMainWindow):
         if not path or not os.path.exists(path):
             return
 
-        # Создаём фоновый QVideoWidget
         if not hasattr(self, "_bg_video_widget"):
             self._bg_video_widget = QVideoWidget(self)
             self._bg_video_widget.setAttribute(Qt.WA_TransparentForMouseEvents)
@@ -230,15 +258,6 @@ class MainWindow(QMainWindow):
         super().resizeEvent(event)
         if hasattr(self, "_bg_video_widget"):
             self._bg_video_widget.setGeometry(self.rect())
-        # Перемещаем оверлеи
-        if hasattr(self, "fps_label"):
-            self.fps_label.move(10, 10)
-        if hasattr(self, "buffering_label"):
-            self.buffering_label.adjustSize()
-            self.buffering_label.move(
-                (self.video_widget.width() - self.buffering_label.width()) // 2,
-                (self.video_widget.height() - self.buffering_label.height()) // 2
-            )
 
     # ============================================================
     #  ХОТКЕИ
@@ -252,11 +271,13 @@ class MainWindow(QMainWindow):
         QShortcut(QKeySequence("F"), self, self._toggle_fullscreen)
         QShortcut(QKeySequence("F11"), self, self._toggle_fullscreen)
         QShortcut(QKeySequence("Esc"), self, self._exit_fullscreen)
-        QShortcut(QKeySequence("M"), self, lambda: self.controls.volume.setValue(0 if self.controls.volume.value() > 0 else 80))
-        QShortcut(QKeySequence("Ctrl+O"), self, self.controls._pick_file)
+        QShortcut(QKeySequence("M"), self, lambda: self._player_page.controls.volume.setValue(
+            0 if self._player_page.controls.volume.value() > 0 else 80
+        ))
+        QShortcut(QKeySequence("Ctrl+O"), self, self._player_page.controls._pick_file)
 
     # ============================================================
-    #  КУРСОР (исчезновение при бездействии)
+    #  КУРСОР
     # ============================================================
     def _setup_cursor_timer(self):
         self._cursor_timer = QTimer(self)
@@ -271,7 +292,7 @@ class MainWindow(QMainWindow):
     def _on_video_area(self) -> bool:
         from PySide6.QtGui import QCursor
         pos = self.mapFromGlobal(QCursor.pos())
-        return self.video_widget.geometry().contains(pos)
+        return self._player_page.video_widget.geometry().contains(pos)
 
     def mouseMoveEvent(self, event):
         super().mouseMoveEvent(event)
@@ -288,20 +309,24 @@ class MainWindow(QMainWindow):
             self._is_fullscreen = True
             self.title_bar.hide()
             self.sidebar.hide()
+            self.status_bar.hide()
             self.showFullScreen()
-            self.controls.hide()
+            self._player_page.controls.hide()
             QApplication.restoreOverrideCursor()
             self._cursor_timer.start()
             Toast(self, "Полный экран (F / Esc — выход)")
 
     def _exit_fullscreen(self):
-        if not self._is_fullscreen: return
+        if not self._is_fullscreen:
+            return
         self._is_fullscreen = False
         QApplication.restoreOverrideCursor()
         self.showNormal()
         self.title_bar.show()
-        self.controls.show()
-        if self._sidebar_visible: self.sidebar.show()
+        self.status_bar.show()
+        self._player_page.controls.show()
+        if self._sidebar_visible:
+            self.sidebar.show()
 
     # ============================================================
     #  ИНФО
@@ -317,22 +342,24 @@ class MainWindow(QMainWindow):
     #  БУФЕР / FPS
     # ============================================================
     def _on_buffering(self, is_buffering: bool):
+        lbl = self._player_page.buffering_label
         if is_buffering:
-            self.buffering_label.adjustSize()
-            self.buffering_label.move(
-                (self.video_widget.width() - self.buffering_label.width()) // 2,
-                (self.video_widget.height() - self.buffering_label.height()) // 2
+            lbl.adjustSize()
+            lbl.move(
+                (self._player_page.video_widget.width() - lbl.width()) // 2,
+                (self._player_page.video_widget.height() - lbl.height()) // 2,
             )
-            self.buffering_label.show()
+            lbl.show()
         else:
-            self.buffering_label.hide()
+            lbl.hide()
 
     def _on_fps(self, fps: float):
+        lbl = self._player_page.fps_label
         if settings().get_fps_overlay():
-            self.fps_label.setText(f"{tr('player.fps')}: {fps:.0f}")
-            self.fps_label.show()
+            lbl.setText(f"{tr('player.fps')}: {fps:.0f}")
+            lbl.show()
         else:
-            self.fps_label.hide()
+            lbl.hide()
 
     # ============================================================
     #  НАВИГАЦИЯ
@@ -340,7 +367,6 @@ class MainWindow(QMainWindow):
     def _on_nav(self, key: str):
         mapping = {"player": 0, "library": 1, "settings": 2, "about": 3}
         self.stack.setCurrentIndex(mapping.get(key, 0))
-        # Fade
         self.stack.setWindowOpacity(0.0)
         self._fade = QPropertyAnimation(self.stack, b"windowOpacity")
         self._fade.setDuration(200)
@@ -357,12 +383,13 @@ class MainWindow(QMainWindow):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        # Если есть видео-фон — не рисуем картинку (видео-виджет сам покажет)
         if self._bg_player and self._bg_player.playbackState() == QMediaPlayer.PlayingState:
             painter.fillRect(self.rect(), QColor(0, 0, 0, 120))
             return
         if self._bg_pixmap and not self._bg_pixmap.isNull():
-            scaled = self._bg_pixmap.scaled(self.size(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+            scaled = self._bg_pixmap.scaled(
+                self.size(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation
+            )
             x = (self.width() - scaled.width()) // 2
             y = (self.height() - scaled.height()) // 2
             painter.drawPixmap(x, y, scaled)
@@ -374,7 +401,8 @@ class MainWindow(QMainWindow):
     #  PLAYLIST
     # ============================================================
     def _play_all(self, paths: list[str]):
-        self._playlist = paths; self._current_index = 0
+        self._playlist = paths
+        self._current_index = 0
         self._on_open(paths[0], add_to_playlist=False)
 
     def _play_next(self):
@@ -388,20 +416,26 @@ class MainWindow(QMainWindow):
     def _on_open(self, path: str, add_to_playlist=True):
         self._library_page.add_paths([path])
         if add_to_playlist:
-            self._playlist = [path]; self._current_index = 0
+            self._playlist = [path]
+            self._current_index = 0
 
         self.player.load(path)
         self.player.play()
         self.stack.setCurrentIndex(0)
         self.sidebar.set_current("player")
+        self._player_page.show_video()
         self._fade_in_video()
 
         filename = path.replace("\\", "/").split("/")[-1]
+        self._current_filename = filename
         self.tray.setToolTip(f"ScarlyPlayer — {filename}")
+        self.status_bar.set_file(filename)
+        self.setWindowTitle(f"⚡ ScarlyPlayer — {filename}")
         Toast(self, f"▶ {filename}", "⏸", self.player.toggle)
 
     def _on_volume(self, value: int):
-        self.player.set_volume(value); settings().set_volume(value)
+        self.player.set_volume(value)
+        settings().set_volume(value)
 
     def _on_language_changed(self, code: str):
         settings().set_language(code)
@@ -409,16 +443,21 @@ class MainWindow(QMainWindow):
     def _on_theme_changed(self):
         self._load_background()
         app = QApplication.instance()
-        if app: apply_theme(app)
+        if app:
+            apply_theme(app)
         self.update()
 
     def _on_reset_all(self):
         settings().reset_all()
         app = QApplication.instance()
-        if app: apply_theme(app)
+        if app:
+            apply_theme(app)
         self._load_background()
         self._library_page._load_data()
         self._library_page._refresh()
+        self._player_page.show_empty()
+        self.status_bar.set_file("")
+        self.setWindowTitle("⚡ ScarlyPlayer")
         self.update()
         Toast(self, "Настройки сброшены")
 
@@ -430,20 +469,30 @@ class MainWindow(QMainWindow):
         self.sidebar.setVisible(True)
 
         anim_min = QPropertyAnimation(self.sidebar, b"minimumWidth", self)
-        anim_min.setDuration(250); anim_min.setStartValue(start_w); anim_min.setEndValue(end_w)
+        anim_min.setDuration(250)
+        anim_min.setStartValue(start_w)
+        anim_min.setEndValue(end_w)
         anim_min.setEasingCurve(QEasingCurve.InOutCubic)
 
         anim_max = QPropertyAnimation(self.sidebar, b"maximumWidth", self)
-        anim_max.setDuration(250); anim_max.setStartValue(start_w); anim_max.setEndValue(end_w)
+        anim_max.setDuration(250)
+        anim_max.setStartValue(start_w)
+        anim_max.setEndValue(end_w)
         anim_max.setEasingCurve(QEasingCurve.InOutCubic)
 
-        if not self._sidebar_visible: anim_min.finished.connect(lambda: self.sidebar.setVisible(False))
-        self._anim_sidebar_min = anim_min; self._anim_sidebar_max = anim_max
-        anim_min.start(); anim_max.start()
+        if not self._sidebar_visible:
+            anim_min.finished.connect(lambda: self.sidebar.setVisible(False))
+
+        self._anim_sidebar_min = anim_min
+        self._anim_sidebar_max = anim_max
+        anim_min.start()
+        anim_max.start()
 
     def _fade_in_video(self):
-        anim = QPropertyAnimation(self._opacity, b"opacity", self)
-        anim.setDuration(400); anim.setStartValue(0.0); anim.setEndValue(1.0)
+        anim = QPropertyAnimation(self._player_page._opacity, b"opacity", self)
+        anim.setDuration(400)
+        anim.setStartValue(0.0)
+        anim.setEndValue(1.0)
         anim.setEasingCurve(QEasingCurve.OutCubic)
         anim.start(QPropertyAnimation.DeleteWhenStopped)
         self._anim = anim

@@ -1,5 +1,5 @@
 # ui/settings_page.py
-"""Страница настроек с плитками: язык, внешний вид, воспроизведение, кэш, опасная зона."""
+"""Страница настроек ScarlyPlayer v1.2.333."""
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
@@ -120,7 +120,7 @@ class SettingsPage(QWidget):
         bg_row.addStretch()
         lay_app.addLayout(bg_row)
 
-        # Видео-фон (loop)
+        # Видео-фон
         vbg_row = QHBoxLayout()
         self._vbg_label = QLabel(tr("settings.video_bg"))
         self._vbg_label.setStyleSheet("color: #A0A0AB;")
@@ -149,14 +149,12 @@ class SettingsPage(QWidget):
         self._playback_title = self._section_title("Воспроизведение")
         lay_play.addWidget(self._playback_title)
 
-        # Запоминать позицию
         self._remember_cb = QCheckBox(tr("settings.remember_position"))
         self._remember_cb.setChecked(settings().get_remember_position())
         self._remember_cb.setStyleSheet("color: #F5F5F7;")
         self._remember_cb.toggled.connect(lambda v: settings().set_remember_position(v))
         lay_play.addWidget(self._remember_cb)
 
-        # FPS-оверлей
         self._fps_cb = QCheckBox(tr("settings.fps_overlay"))
         self._fps_cb.setChecked(settings().get_fps_overlay())
         self._fps_cb.setStyleSheet("color: #F5F5F7;")
@@ -215,12 +213,27 @@ class SettingsPage(QWidget):
         root.addWidget(card_cache)
 
         # ============================================================
-        #  ПЛИТКА 6: ОБНОВЛЕНИЯ
+        #  ПЛИТКА 6: ОБНОВЛЕНИЯ (с бейджем «работает плохо»)
         # ============================================================
         card_upd = self._create_card()
         lay_upd = QVBoxLayout(card_upd)
         lay_upd.setContentsMargins(20, 20, 20, 20)
         lay_upd.setSpacing(12)
+
+        # Заголовок + бейдж
+        upd_header = QHBoxLayout()
+        self._updates_title = QLabel(tr("settings.check_updates.title"))
+        self._updates_title.setStyleSheet("color: #F5F5F7; font-size: 16px; font-weight: 700;")
+        upd_header.addWidget(self._updates_title)
+
+        self._updates_badge = QLabel(tr("settings.check_updates.badge"))
+        self._updates_badge.setStyleSheet(
+            "background: #E53935; color: white; padding: 3px 10px; "
+            "border-radius: 10px; font-size: 11px; font-weight: 600;"
+        )
+        upd_header.addWidget(self._updates_badge)
+        upd_header.addStretch()
+        lay_upd.addLayout(upd_header)
 
         self._btn_updates = QPushButton(tr("settings.check_updates"))
         self._btn_updates.setObjectName("CtrlBtn")
@@ -296,10 +309,14 @@ class SettingsPage(QWidget):
 
     def _update_color_preview(self):
         c = settings().get_accent_color()
-        self._color_preview.setStyleSheet(f"background: {c}; border-radius: 12px; border: 1px solid #5A5A66;")
+        self._color_preview.setStyleSheet(
+            f"background: {c}; border-radius: 12px; border: 1px solid #5A5A66;"
+        )
 
     def _pick_bg(self):
-        path, _ = QFileDialog.getOpenFileName(self, tr("settings.bg"), "", "Изображения (*.png *.jpg *.jpeg)")
+        path, _ = QFileDialog.getOpenFileName(
+            self, tr("settings.bg"), "", "Изображения (*.png *.jpg *.jpeg)"
+        )
         if path:
             settings().set_bg_image(path)
             self.themeChanged.emit()
@@ -309,7 +326,9 @@ class SettingsPage(QWidget):
         self.themeChanged.emit()
 
     def _pick_vbg(self):
-        path, _ = QFileDialog.getOpenFileName(self, tr("settings.video_bg"), "", "Видео (*.mp4 *.webm)")
+        path, _ = QFileDialog.getOpenFileName(
+            self, tr("settings.video_bg"), "", "Видео (*.mp4 *.webm)"
+        )
         if path:
             settings().set_bg_video(path)
             self.bgVideoChanged.emit()
@@ -319,7 +338,9 @@ class SettingsPage(QWidget):
         self.bgVideoChanged.emit()
 
     def _pick_folder(self):
-        path = QFileDialog.getExistingDirectory(self, tr("settings.folder"), settings().get_default_dir())
+        path = QFileDialog.getExistingDirectory(
+            self, tr("settings.folder"), settings().get_default_dir()
+        )
         if path:
             settings().set_default_dir(path)
             self._refresh_labels()
@@ -371,6 +392,8 @@ class SettingsPage(QWidget):
         self._btn_folder_reset.setText(tr("settings.folder.reset"))
         self._cache_title.setText(tr("settings.cache"))
         self._btn_cache.setText(tr("settings.cache.clear"))
+        self._updates_title.setText(tr("settings.check_updates.title"))
+        self._updates_badge.setText(tr("settings.check_updates.badge"))
         self._btn_updates.setText(tr("settings.check_updates"))
         self._danger_title.setText(tr("settings.danger"))
         self._danger_desc.setText(tr("settings.reset.desc"))

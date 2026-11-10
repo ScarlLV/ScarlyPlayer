@@ -1,10 +1,7 @@
-# core/i18n.py
-"""Лёгкий i18n для ScarlyPlayer (9 языков)."""
-
 from __future__ import annotations
 from PySide6.QtCore import QObject, Signal
 
-APP_VERSION = "1.2.22"
+APP_VERSION = "1.2.333"
 APP_AUTHOR  = "ScarlyDev"
 APP_REPO    = "https://github.com/ScarlLV/ScarlyPlayer"
 DEFAULT_LANG = "ru"
@@ -37,7 +34,6 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "hotkeys.title": "Горячие клавиши", "hotkeys.play": "Play/Pause", "hotkeys.seek": "Перемотка", "hotkeys.fullscreen": "Полный экран",
         "about.version": "Версия", "about.author": "Автор", "about.repo": "GitHub", "about.thanks": "Сделано с ❤️ на PySide6",
         
-        # Новые
         "btn.stop.tip": "Стоп", "btn.more": "Ещё", "btn.favorite": "⭐ В избранное", "btn.unfavorite": "Убрать из избранного",
         "btn.info": "Информация", "player.buffering": "Загрузка...", "player.fps": "FPS", "player.new": "NEW", "player.favorite": "Избранное",
         "settings.remember_position": "Запоминать позицию видео", "settings.remember_position.desc": "Показывать «Продолжить с...» при открытии",
@@ -47,6 +43,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings.check_updates": "🔄 Проверить обновления", "settings.check_updates.checking": "Проверка...",
         "settings.check_updates.up_to_date": "У вас последняя версия", "settings.check_updates.available": "Доступна новая версия: {v}",
         "settings.check_updates.error": "Не удалось проверить обновления", "settings.danger": "Опасная зона",
+        "settings.check_updates.title": "Обновления",
+        "settings.check_updates.badge": "⚠️ Работает плохо, скоро починим",
         "settings.reset.desc": "Удалить все настройки, библиотеку и позиции", "settings.reset.button": "⚠️ Сбросить всё",
         "settings.assoc": "Ассоциация файлов", "settings.assoc.desc": "Открывать видео в ScarlyPlayer",
         "settings.assoc.button": "Привязать .mp4/.mkv к ScarlyPlayer", "settings.assoc.done": "Ассоциация установлена (требует перезапуска)",
@@ -55,6 +53,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "info.meta.resolution": "Разрешение", "info.meta.edit": "Редактировать", "info.meta.save": "Сохранить",
         "stats.title": "Статистика просмотра", "stats.total_hours": "Всего часов просмотра", "stats.total_videos": "Просмотрено видео",
         "stats.favorite_count": "В избранном", "stats.library_count": "В библиотеке", "stats.top_videos": "Топ-5 по просмотрам",
+        
+        "empty.title": "Открой видео, чтобы начать",
+        "empty.hint": "Или перетащи файл в окно",
+        "empty.button": "Открыть файл",
     },
     "uk": {
         "nav.player": "Плеєр", "nav.library": "Бібліотека", "nav.settings": "Налаштування", "nav.about": "Про ScarlyPlayer",
@@ -85,6 +87,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings.check_updates": "🔄 Перевірити оновлення", "settings.check_updates.checking": "Перевірка...",
         "settings.check_updates.up_to_date": "У вас остання версія", "settings.check_updates.available": "Доступна нова версія: {v}",
         "settings.check_updates.error": "Не вдалося перевірити", "settings.danger": "Небезпечна зона",
+        "settings.check_updates.title": "Оновлення",
+        "settings.check_updates.badge": "⚠️ Працює погано, скоро виправимо",
         "settings.reset.desc": "Видалити всі налаштування", "settings.reset.button": "⚠️ Скинути все",
         "settings.assoc": "Асоціація файлів", "settings.assoc.desc": "Відкривати відео в ScarlyPlayer",
         "settings.assoc.button": "Прив'язати .mp4/.mkv", "settings.assoc.done": "Асоціацію встановлено",
@@ -93,6 +97,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "info.meta.resolution": "Роздільність", "info.meta.edit": "Редагувати", "info.meta.save": "Зберегти",
         "stats.title": "Статистика", "stats.total_hours": "Годин перегляду", "stats.total_videos": "Переглянуто відео",
         "stats.favorite_count": "В обраному", "stats.library_count": "У бібліотеці", "stats.top_videos": "Топ-5 за переглядами",
+        
+        "empty.title": "Відкрий відео, щоб почати",
+        "empty.hint": "Або перетягни файл у вікно",
+        "empty.button": "Відкрити файл",
     },
     "be": {
         "nav.player": "Плеер", "nav.library": "Бібліятэка", "nav.settings": "Налады", "nav.about": "Аб ScarlyPlayer",
@@ -123,6 +131,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings.check_updates": "🔄 Праверыць абнаўленні", "settings.check_updates.checking": "Праверка...",
         "settings.check_updates.up_to_date": "У вас апошняя версія", "settings.check_updates.available": "Даступна новая версія: {v}",
         "settings.check_updates.error": "Не ўдалося праверыць", "settings.danger": "Небяспечная зона",
+        "settings.check_updates.title": "Абнаўленні",
+        "settings.check_updates.badge": "⚠️ Працуе дрэнна, хутка выправім",
         "settings.reset.desc": "Выдаліць усе налады", "settings.reset.button": "⚠️ Скінуць усё",
         "settings.assoc": "Асацыяцыя файлаў", "settings.assoc.desc": "Адкрываць відэа ў ScarlyPlayer",
         "settings.assoc.button": "Прывязаць .mp4/.mkv", "settings.assoc.done": "Асацыяцыя ўсталявана",
@@ -131,6 +141,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "info.meta.resolution": "Разрозненне", "info.meta.edit": "Рэдагаваць", "info.meta.save": "Захаваць",
         "stats.title": "Статыстыка", "stats.total_hours": "Гадзін прагляду", "stats.total_videos": "Прагледжана відэа",
         "stats.favorite_count": "У абраным", "stats.library_count": "У бібліятэцы", "stats.top_videos": "Топ-5",
+        
+        "empty.title": "Адкрый відэа, каб пачаць",
+        "empty.hint": "Або перацягні файл у акно",
+        "empty.button": "Адкрыць файл",
     },
     "de": {
         "nav.player": "Player", "nav.library": "Bibliothek", "nav.settings": "Einstellungen", "nav.about": "Über",
@@ -161,6 +175,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings.check_updates": "🔄 Auf Updates prüfen", "settings.check_updates.checking": "Prüfe...",
         "settings.check_updates.up_to_date": "Sie haben die neueste Version", "settings.check_updates.available": "Neue Version verfügbar: {v}",
         "settings.check_updates.error": "Update-Prüfung fehlgeschlagen", "settings.danger": "Gefahrenzone",
+        "settings.check_updates.title": "Updates",
+        "settings.check_updates.badge": "⚠️ Funktioniert schlecht, bald behoben",
         "settings.reset.desc": "Alle Einstellungen löschen", "settings.reset.button": "⚠️ Alles zurücksetzen",
         "settings.assoc": "Dateizuordnung", "settings.assoc.desc": "Videos in ScarlyPlayer öffnen",
         "settings.assoc.button": ".mp4/.mkv zuordnen", "settings.assoc.done": "Zuordnung festgelegt",
@@ -169,6 +185,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "info.meta.resolution": "Auflösung", "info.meta.edit": "Bearbeiten", "info.meta.save": "Speichern",
         "stats.title": "Statistik", "stats.total_hours": "Stunden angesehen", "stats.total_videos": "Videos angesehen",
         "stats.favorite_count": "Favoriten", "stats.library_count": "In Bibliothek", "stats.top_videos": "Top-5",
+        
+        "empty.title": "Öffne ein Video, um zu starten",
+        "empty.hint": "Oder ziehe eine Datei ins Fenster",
+        "empty.button": "Datei öffnen",
     },
     "zh": {
         "nav.player": "播放器", "nav.library": "媒体库", "nav.settings": "设置", "nav.about": "关于",
@@ -199,6 +219,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings.check_updates": "🔄 检查更新", "settings.check_updates.checking": "检查中...",
         "settings.check_updates.up_to_date": "已是最新版本", "settings.check_updates.available": "有新版本：{v}",
         "settings.check_updates.error": "检查失败", "settings.danger": "危险区",
+        "settings.check_updates.title": "更新",
+        "settings.check_updates.badge": "⚠️ 运行不佳，即将修复",
         "settings.reset.desc": "删除所有设置", "settings.reset.button": "⚠️ 重置",
         "settings.assoc": "文件关联", "settings.assoc.desc": "用 ScarlyPlayer 打开视频",
         "settings.assoc.button": "关联 .mp4/.mkv", "settings.assoc.done": "关联已设置",
@@ -207,6 +229,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "info.meta.resolution": "分辨率", "info.meta.edit": "编辑", "info.meta.save": "保存",
         "stats.title": "统计", "stats.total_hours": "总观看小时", "stats.total_videos": "已观看视频",
         "stats.favorite_count": "收藏数", "stats.library_count": "库中数量", "stats.top_videos": "播放前5",
+        
+        "empty.title": "打开视频以开始播放",
+        "empty.hint": "或将文件拖入窗口",
+        "empty.button": "打开文件",
     },
     "ja": {
         "nav.player": "プレイヤー", "nav.library": "ライブラリ", "nav.settings": "設定", "nav.about": "情報",
@@ -237,6 +263,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings.check_updates": "🔄 更新確認", "settings.check_updates.checking": "確認中...",
         "settings.check_updates.up_to_date": "最新版です", "settings.check_updates.available": "新しいバージョン: {v}",
         "settings.check_updates.error": "確認失敗", "settings.danger": "危険",
+        "settings.check_updates.title": "アップデート",
+        "settings.check_updates.badge": "⚠️ 動作が不安定です。近日修正予定",
         "settings.reset.desc": "すべての設定を削除", "settings.reset.button": "⚠️ リセット",
         "settings.assoc": "ファイル関連付け", "settings.assoc.desc": "ScarlyPlayer で開く",
         "settings.assoc.button": ".mp4/.mkv に関連付け", "settings.assoc.done": "関連付け完了",
@@ -245,6 +273,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "info.meta.resolution": "解像度", "info.meta.edit": "編集", "info.meta.save": "保存",
         "stats.title": "統計", "stats.total_hours": "総視聴時間", "stats.total_videos": "視聴本数",
         "stats.favorite_count": "お気に入り", "stats.library_count": "ライブラリ内", "stats.top_videos": "トップ5",
+        
+        "empty.title": "動画を開いて開始",
+        "empty.hint": "またはウィンドウにファイルをドロップ",
+        "empty.button": "ファイルを開く",
     },
     "fr": {
         "nav.player": "Lecteur", "nav.library": "Bibliothèque", "nav.settings": "Paramètres", "nav.about": "À propos",
@@ -275,6 +307,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings.check_updates": "🔄 Vérifier les MAJ", "settings.check_updates.checking": "Vérification...",
         "settings.check_updates.up_to_date": "Vous êtes à jour", "settings.check_updates.available": "Nouvelle version : {v}",
         "settings.check_updates.error": "Échec de la vérification", "settings.danger": "Zone dangereuse",
+        "settings.check_updates.title": "Mises à jour",
+        "settings.check_updates.badge": "⚠️ Fonctionne mal, bientôt corrigé",
         "settings.reset.desc": "Supprimer tous les paramètres", "settings.reset.button": "⚠️ Tout réinitialiser",
         "settings.assoc": "Association de fichiers", "settings.assoc.desc": "Ouvrir les vidéos dans ScarlyPlayer",
         "settings.assoc.button": "Associer .mp4/.mkv", "settings.assoc.done": "Association définie",
@@ -283,6 +317,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "info.meta.resolution": "Résolution", "info.meta.edit": "Éditer", "info.meta.save": "Sauvegarder",
         "stats.title": "Statistiques", "stats.total_hours": "Heures regardées", "stats.total_videos": "Vidéos vues",
         "stats.favorite_count": "Favoris", "stats.library_count": "Dans bibliothèque", "stats.top_videos": "Top 5",
+        
+        "empty.title": "Ouvre une vidéo pour commencer",
+        "empty.hint": "Ou glisse un fichier dans la fenêtre",
+        "empty.button": "Ouvrir un fichier",
     },
     "es": {
         "nav.player": "Reproductor", "nav.library": "Biblioteca", "nav.settings": "Ajustes", "nav.about": "Acerca de",
@@ -313,6 +351,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings.check_updates": "🔄 Buscar actualizaciones", "settings.check_updates.checking": "Buscando...",
         "settings.check_updates.up_to_date": "Ya está actualizado", "settings.check_updates.available": "Nueva versión: {v}",
         "settings.check_updates.error": "No se pudo verificar", "settings.danger": "Zona peligrosa",
+        "settings.check_updates.title": "Actualizaciones",
+        "settings.check_updates.badge": "⚠️ Funciona mal, se arreglará pronto",
         "settings.reset.desc": "Eliminar todos los ajustes", "settings.reset.button": "⚠️ Reiniciar todo",
         "settings.assoc": "Asociación de archivos", "settings.assoc.desc": "Abrir videos en ScarlyPlayer",
         "settings.assoc.button": "Asociar .mp4/.mkv", "settings.assoc.done": "Asociación establecida",
@@ -321,6 +361,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "info.meta.resolution": "Resolución", "info.meta.edit": "Editar", "info.meta.save": "Guardar",
         "stats.title": "Estadísticas", "stats.total_hours": "Horas vistas", "stats.total_videos": "Videos vistos",
         "stats.favorite_count": "Favoritos", "stats.library_count": "En biblioteca", "stats.top_videos": "Top 5",
+        
+        "empty.title": "Abre un video para comenzar",
+        "empty.hint": "O arrastra un archivo a la ventana",
+        "empty.button": "Abrir archivo",
     },
     "pt": {
         "nav.player": "Player", "nav.library": "Biblioteca", "nav.settings": "Configurações", "nav.about": "Sobre",
@@ -351,6 +395,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "settings.check_updates": "🔄 Verificar atualizações", "settings.check_updates.checking": "Verificando...",
         "settings.check_updates.up_to_date": "Você está atualizado", "settings.check_updates.available": "Nova versão: {v}",
         "settings.check_updates.error": "Falha ao verificar", "settings.danger": "Zona perigosa",
+        "settings.check_updates.title": "Atualizações",
+        "settings.check_updates.badge": "⚠️ Funciona mal, será corrigido em breve",
         "settings.reset.desc": "Excluir todas as configurações", "settings.reset.button": "⚠️ Redefinir tudo",
         "settings.assoc": "Associação de arquivos", "settings.assoc.desc": "Abrir vídeos no ScarlyPlayer",
         "settings.assoc.button": "Associar .mp4/.mkv", "settings.assoc.done": "Associação definida",
@@ -359,6 +405,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "info.meta.resolution": "Resolução", "info.meta.edit": "Editar", "info.meta.save": "Salvar",
         "stats.title": "Estatísticas", "stats.total_hours": "Horas vistas", "stats.total_videos": "Vídeos vistos",
         "stats.favorite_count": "Favoritos", "stats.library_count": "Na biblioteca", "stats.top_videos": "Top 5",
+        
+        "empty.title": "Abra um vídeo para começar",
+        "empty.hint": "Ou arraste um arquivo para a janela",
+        "empty.button": "Abrir arquivo",
     },
 }
 

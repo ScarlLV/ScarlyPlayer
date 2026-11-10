@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QPushButton, QLabel, QFrame
 )
 
-from core.i18n import tr, translator
+from core.i18n import tr, translator, APP_VERSION
 
 
 NAV_ITEMS: list[tuple[str, str, str]] = [
@@ -20,13 +20,6 @@ NAV_ITEMS: list[tuple[str, str, str]] = [
 
 
 class Sidebar(QWidget):
-    """
-    Боковая панель.
-
-    pageRequested(str) эмитит КЛЮЧ страницы:
-        'player' | 'library' | 'settings' | 'about'
-    """
-
     pageRequested = Signal(str)
 
     def __init__(self):
@@ -74,7 +67,7 @@ class Sidebar(QWidget):
 
         layout.addStretch()
 
-        self._version = QLabel("v1.1.11")
+        self._version = QLabel(f"v{APP_VERSION}")
         self._version.setStyleSheet("color: #5A5A66; font-size: 11px; padding: 6px;")
         layout.addWidget(self._version)
 
