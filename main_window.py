@@ -1,6 +1,3 @@
-# ui/main_window.py
-"""Главное окно ScarlyPlayer v1.2.333."""
-
 import os
 from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QTimer, QUrl
 from PySide6.QtGui import QPainter, QPixmap, QColor, QKeySequence, QShortcut
@@ -20,6 +17,7 @@ from core.icons import load_svg_icon, resource_path
 from ui.toast import Toast
 from ui.info_dialog import InfoDialog
 from ui.player_page import PlayerPage
+from ui.stats_page import StatsPage
 
 from ui.title_bar import TitleBar
 from ui.sidebar import Sidebar
@@ -29,7 +27,7 @@ from ui.about_page import AboutPage
 
 
 class StatusBar(QWidget):
-    """E1: статусбар внизу окна."""
+    """Статусбар внизу окна."""
 
     def __init__(self):
         super().__init__()
@@ -55,7 +53,6 @@ class StatusBar(QWidget):
         lay.addWidget(QLabel("│"))
         lay.addWidget(self.lbl_aspect)
 
-        # Разделители
         for sep in self.findChildren(QLabel):
             if sep.text() == "│":
                 sep.setStyleSheet("color: #2A2A33; font-size: 11px;")
@@ -93,6 +90,9 @@ class MainWindow(QMainWindow):
         self._bg_player: QMediaPlayer | None = None
         self._bg_audio: QAudioOutput | None = None
 
+        # Хоткеи
+        self._shortcuts: list[QShortcut] = []
+
         self._setup_ui()
         self._setup_player_connections()
         self._setup_tray()
@@ -123,28 +123,30 @@ class MainWindow(QMainWindow):
         self.sidebar.setFixedWidth(220 if self._sidebar_visible else 0)
         body_layout.addWidget(self.sidebar)
 
-        # Стек
         self.stack = QStackedWidget()
         self.stack.setStyleSheet("background: transparent;")
         body_layout.addWidget(self.stack, 1)
 
         self._player_page = PlayerPage()
         self._library_page = LibraryPage()
+        self._stats_page = StatsPage()
         self._settings_page = SettingsPage()
         self._about_page = AboutPage()
 
-        self.stack.addWidget(self._player_page)
-        self.stack.addWidget(self._library_page)
-        self.stack.addWidget(self._settings_page)
-        self.stack.addWidget(self._about_page)
+        self.stack.addWidget(self._player_page)    # 0
+        self.stack.addWidget(self._library_page)   # 1
+        self.stack.addWidget(self._stats_page)     # 2
+        self.stack.addWidget(self._settings_page)  # 3
+        self.stack.addWidget(self._about_page)     # 4
 
-        # E1: статусбар
+        # Статусбар
         self.status_bar = StatusBar()
         outer.addWidget(self.status_bar)
 
         # Сигналы
         self.sidebar.pageRequested.connect(self._on_nav)
         self._player_page.openRequested.connect(self._on_open)
+        self._player_page.carouselItemClicked.connect(self._on_carousel_clicked)
         self._library_page.playRequested.connect(self._on_open)
         self._library_page.playAllRequested.connect(self._play_all)
         self._settings_page.languageChanged.connect(self._on_language_changed)
@@ -168,7 +170,6 @@ class MainWindow(QMainWindow):
         self._player_page.aspectChanged.connect(self._on_aspect_changed)
         self._player_page.fullscreenToggled.connect(self._toggle_fullscreen)
         self._player_page.infoRequested.connect(self._show_video_info)
-
         controls.btn_stop.clicked.connect(self.player.stop)
 
         self.player.durationChanged.connect(controls.set_duration)
@@ -183,7 +184,6 @@ class MainWindow(QMainWindow):
 
     def _on_position(self, ms: int):
         self._player_page.controls.set_position(ms)
-        # E1: обновляем статусбар
         dur = self.player._player.duration()
         if dur > 0:
             s = ms // 1000
@@ -260,21 +260,41 @@ class MainWindow(QMainWindow):
             self._bg_video_widget.setGeometry(self.rect())
 
     # ============================================================
-    #  ХОТКЕИ
+    #  ХОТКЕИ (из настроек)
     # ============================================================
+    def _clear_shortcuts(self):
+        for sc in self._shortcuts:
+            sc.setEnabled(False)
+            sc.deleteLater()
+        self._shortcuts.clear()
+
     def _setup_hotkeys(self):
-        QShortcut(QKeySequence("Space"), self, self.player.toggle)
-        QShortcut(QKeySequence("Left"), self, lambda: self.player.smart_seek(False, False))
-        QShortcut(QKeySequence("Right"), self, lambda: self.player.smart_seek(True, False))
-        QShortcut(QKeySequence("Shift+Left"), self, lambda: self.player.smart_seek(False, True))
-        QShortcut(QKeySequence("Shift+Right"), self, lambda: self.player.smart_seek(True, True))
-        QShortcut(QKeySequence("F"), self, self._toggle_fullscreen)
-        QShortcut(QKeySequence("F11"), self, self._toggle_fullscreen)
-        QShortcut(QKeySequence("Esc"), self, self._exit_fullscreen)
-        QShortcut(QKeySequence("M"), self, lambda: self._player_page.controls.volume.setValue(
-            0 if self._player_page.controls.volume.value() > 0 else 80
-        ))
-        QShortcut(QKeySequence("Ctrl+O"), self, self._player_page.controls._pick_file)
+        self._clear_shortcuts()
+
+        # Action → callback
+        callbacks = {
+            "play_pause":       self.player.toggle,
+            "seek_left":        lambda: self.player.smart_seek(False, False),
+            "seek_right":       lambda: self.player.smart_seek(True, False),
+            "seek_left_long":   lambda: self.player.smart_seek(False, True),
+            "seek_right_long":  lambda: self.player.smart_seek(True, True),
+            "fullscreen":       self._toggle_fullscreen,
+            "exit_fullscreen":  self._exit_fullscreen,
+            "mute":             self._toggle_mute,
+            "open_file":        self._player_page.controls._pick_file,
+        }
+
+        for action, cb in callbacks.items():
+            key = settings().get_hotkey(action)
+            if not key:
+                continue
+            sc = QShortcut(QKeySequence(key), self)
+            sc.activated.connect(cb)
+            self._shortcuts.append(sc)
+
+    def _toggle_mute(self):
+        ctrl = self._player_page.controls
+        ctrl.volume.setValue(0 if ctrl.volume.value() > 0 else 80)
 
     # ============================================================
     #  КУРСОР
@@ -314,7 +334,7 @@ class MainWindow(QMainWindow):
             self._player_page.controls.hide()
             QApplication.restoreOverrideCursor()
             self._cursor_timer.start()
-            Toast(self, "Полный экран (F / Esc — выход)")
+            Toast(self, "Полный экран (Esc — выход)")
 
     def _exit_fullscreen(self):
         if not self._is_fullscreen:
@@ -365,8 +385,15 @@ class MainWindow(QMainWindow):
     #  НАВИГАЦИЯ
     # ============================================================
     def _on_nav(self, key: str):
-        mapping = {"player": 0, "library": 1, "settings": 2, "about": 3}
-        self.stack.setCurrentIndex(mapping.get(key, 0))
+        mapping = {
+            "player": 0, "library": 1, "stats": 2,
+            "settings": 3, "about": 4,
+        }
+        idx = mapping.get(key, 0)
+        self.stack.setCurrentIndex(idx)
+        # Обновляем статистику при переходе
+        if key == "stats":
+            self._stats_page.refresh()
         self.stack.setWindowOpacity(0.0)
         self._fade = QPropertyAnimation(self.stack, b"windowOpacity")
         self._fade.setDuration(200)
@@ -410,6 +437,11 @@ class MainWindow(QMainWindow):
             self._current_index += 1
             self._on_open(self._playlist[self._current_index], add_to_playlist=False)
 
+    def _on_carousel_clicked(self, index: int):
+        if 0 <= index < len(self._playlist):
+            self._current_index = index
+            self._on_open(self._playlist[index], add_to_playlist=False)
+
     # ============================================================
     #  HANDLERS
     # ============================================================
@@ -425,6 +457,12 @@ class MainWindow(QMainWindow):
         self.sidebar.set_current("player")
         self._player_page.show_video()
         self._fade_in_video()
+
+        # Обновляем карусель
+        if len(self._playlist) > 1:
+            self._player_page.carousel.set_playlist(self._playlist, self._current_index)
+        else:
+            self._player_page.carousel.clear()
 
         filename = path.replace("\\", "/").split("/")[-1]
         self._current_filename = filename
@@ -456,6 +494,7 @@ class MainWindow(QMainWindow):
         self._library_page._load_data()
         self._library_page._refresh()
         self._player_page.show_empty()
+        self._player_page.carousel.clear()
         self.status_bar.set_file("")
         self.setWindowTitle("⚡ ScarlyPlayer")
         self.update()

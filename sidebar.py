@@ -14,6 +14,7 @@ from core.i18n import tr, translator, APP_VERSION
 NAV_ITEMS: list[tuple[str, str, str]] = [
     ("player",   "▶",  "nav.player"),
     ("library",  "📁", "nav.library"),
+    ("stats",    "📊", "nav.stats"),
     ("settings", "⚙",  "nav.settings"),
     ("about",    "ℹ",  "nav.about"),
 ]

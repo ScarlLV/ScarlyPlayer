@@ -5,13 +5,106 @@ from pathlib import Path
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
-    QListWidget, QListWidgetItem, QFileDialog, QMenu, QMessageBox, QLineEdit, QComboBox
+    QListWidget, QListWidgetItem, QFileDialog, QMenu, QMessageBox,
+    QLineEdit, QComboBox, QDialog, QScrollArea
 )
 from core.i18n import tr, translator
 from core.settings import settings
 
 VIDEO_EXTS = {".mp4", ".mkv", ".avi", ".mov", ".webm", ".m4v", ".flv", ".wmv", ".ts"}
 NEW_THRESHOLD_SEC = 24 * 3600
+
+
+class DuplicatesDialog(QDialog):
+    """Диалог для показа групп дубликатов."""
+
+    def __init__(self, parent, groups: dict[str, list[dict]]):
+        super().__init__(parent)
+        self.setWindowTitle(tr("library.duplicates"))
+        self.resize(720, 520)
+        self.setStyleSheet(
+            "QDialog { background: #17171C; color: #F5F5F7; }"
+            "QLabel { color: #F5F5F7; background: transparent; }"
+            "QPushButton { background: #2A2A33; color: #F5F5F7; padding: 6px 12px; "
+            "border-radius: 6px; }"
+            "QPushButton:hover { background: #3A3A45; }"
+            "QPushButton#DangerBtn { background: #C62828; }"
+            "QPushButton#DangerBtn:hover { background: #E53935; }"
+        )
+        self._groups = groups
+        self._build_ui()
+
+    def _build_ui(self):
+        root = QVBoxLayout(self)
+        root.setContentsMargins(24, 24, 24, 24)
+        root.setSpacing(16)
+
+        title = QLabel("🔍 " + tr("library.duplicates"))
+        title.setStyleSheet("font-size: 18px; font-weight: 800;")
+        root.addWidget(title)
+
+        subtitle = QLabel(tr("library.duplicates.found").format(n=len(self._groups)))
+        subtitle.setStyleSheet("color: #A0A0AB; font-size: 13px;")
+        root.addWidget(subtitle)
+
+        # Скролл с группами
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("QScrollArea { border: none; background: transparent; }")
+
+        content = QWidget()
+        content.setStyleSheet("background: transparent;")
+        content_lay = QVBoxLayout(content)
+        content_lay.setSpacing(16)
+
+        for i, (hash_, items) in enumerate(self._groups.items(), start=1):
+            group_widget = QWidget()
+            group_widget.setStyleSheet(
+                "background: #1F1F26; border: 1px solid #2A2A33; border-radius: 10px;"
+            )
+            group_lay = QVBoxLayout(group_widget)
+            group_lay.setContentsMargins(16, 12, 16, 12)
+            group_lay.setSpacing(8)
+
+            header = QLabel(f"Группа #{i} — {len(items)} файл(а)")
+            header.setStyleSheet("font-size: 14px; font-weight: 700; color: #E53935;")
+            group_lay.addWidget(header)
+
+            for item in items:
+                path = item["path"]
+                row = QHBoxLayout()
+
+                name = QLabel(Path(path).name)
+                name.setStyleSheet("color: #F5F5F7; font-size: 13px;")
+                name.setWordWrap(True)
+                row.addWidget(name, 1)
+
+                # Размер
+                try:
+                    size_mb = os.path.getsize(path) / (1024 * 1024)
+                    size_lbl = QLabel(f"{size_mb:.1f} MB")
+                    size_lbl.setStyleSheet("color: #A0A0AB; font-size: 12px;")
+                    row.addWidget(size_lbl)
+                except OSError:
+                    pass
+
+                group_lay.addLayout(row)
+
+            content_lay.addWidget(group_widget)
+
+        content_lay.addStretch()
+        scroll.setWidget(content)
+        root.addWidget(scroll, 1)
+
+        # Кнопки
+        btns = QHBoxLayout()
+        btns.addStretch()
+
+        btn_close = QPushButton("Закрыть")
+        btn_close.clicked.connect(self.accept)
+        btns.addWidget(btn_close)
+
+        root.addLayout(btns)
 
 
 class LibraryPage(QWidget):
@@ -42,6 +135,7 @@ class LibraryPage(QWidget):
         root.setSpacing(12)
         self.setStyleSheet("background: transparent;")
 
+        # Заголовок + поиск
         header = QHBoxLayout()
         self._title = QLabel(tr("library.title"))
         self._title.setStyleSheet("font-size:20px; font-weight:700; color:#F5F5F7;")
@@ -57,6 +151,7 @@ class LibraryPage(QWidget):
         header.addWidget(self.search_bar, 1)
         root.addLayout(header)
 
+        # Панель инструментов
         toolbar = QHBoxLayout()
         self.sort_combo = QComboBox()
         self.sort_combo.setStyleSheet("background:rgba(31,31,38,240); border-radius:8px; padding:4px; color:white;")
@@ -80,12 +175,18 @@ class LibraryPage(QWidget):
         self.btn_play_all.clicked.connect(self._play_all)
         toolbar.addWidget(self.btn_play_all)
 
+        self.btn_duplicates = QPushButton(tr("library.duplicates"))
+        self.btn_duplicates.setObjectName("CtrlBtn")
+        self.btn_duplicates.clicked.connect(self._find_duplicates)
+        toolbar.addWidget(self.btn_duplicates)
+
         self.btn_clear = QPushButton(tr("library.clear"))
         self.btn_clear.setObjectName("CtrlBtn")
         self.btn_clear.clicked.connect(self._clear_all)
         toolbar.addWidget(self.btn_clear)
         root.addLayout(toolbar)
 
+        # Список
         self.list = QListWidget()
         self.list.setStyleSheet("""
             QListWidget { background: rgba(23, 23, 28, 200); border: 1px solid #2A2A33;
@@ -99,6 +200,7 @@ class LibraryPage(QWidget):
         self.list.customContextMenuRequested.connect(self._on_context_menu)
         root.addWidget(self.list, 1)
 
+        # Пустое состояние
         self.empty_label = QLabel(tr("library.empty"))
         self.empty_label.setAlignment(Qt.AlignCenter)
         self.empty_label.setStyleSheet("color: #A0A0AB; font-size: 16px;")
@@ -145,6 +247,7 @@ class LibraryPage(QWidget):
             title = data.get("title", "") or Path(path).name
             author = data.get("author", "")
             favorite = data.get("favorite", False)
+            watch_count = int(data.get("watch_count", 0))
             mtime = os.path.getmtime(path) if os.path.exists(path) else 0
             is_new = (now - mtime) < NEW_THRESHOLD_SEC
 
@@ -156,6 +259,8 @@ class LibraryPage(QWidget):
             display = prefix + "🎬 " + title
             if author:
                 display += f" — {author}"
+            if watch_count > 0:
+                display += f"  👁 {watch_count}"
             if tags:
                 display += f"  [{tags}]"
 
@@ -181,10 +286,12 @@ class LibraryPage(QWidget):
                 continue
             if p not in self._paths:
                 self._paths.append(p)
+                # Считаем хэш сразу
+                h = settings().compute_hash(p)
                 self._items_data[p] = {
                     "path": p, "tags": "", "favorite": False,
                     "watch_count": 0, "last_watched": 0,
-                    "title": "", "author": "",
+                    "title": "", "author": "", "hash": h,
                 }
                 added = True
         if added:
@@ -193,6 +300,19 @@ class LibraryPage(QWidget):
     def _play_all(self):
         if self._paths:
             self.playAllRequested.emit(self._paths)
+
+    def _find_duplicates(self):
+        # Обновляем хэши для тех, у кого нет
+        updated = settings().update_library_hashes()
+        if updated:
+            self._load_data()
+
+        groups = settings().find_duplicates()
+        if not groups:
+            QMessageBox.information(self, tr("library.duplicates"), tr("library.duplicates.none"))
+            return
+        dlg = DuplicatesDialog(self, groups)
+        dlg.exec()
 
     def _clear_all(self):
         if not self._paths:
@@ -264,6 +384,7 @@ class LibraryPage(QWidget):
         self._title.setText(tr("library.title"))
         self.btn_add.setText(tr("library.add"))
         self.btn_clear.setText(tr("library.clear"))
+        self.btn_duplicates.setText(tr("library.duplicates"))
         self.empty_label.setText(tr("library.empty"))
         self.sort_combo.setItemText(0, tr("library.sort.date"))
         self.sort_combo.setItemText(1, tr("library.sort.name"))

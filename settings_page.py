@@ -1,5 +1,5 @@
 # ui/settings_page.py
-"""Страница настроек ScarlyPlayer v1.2.333."""
+"""Страница настроек ScarlyPlayer v1.3.0."""
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
@@ -9,7 +9,6 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QColor
 from core.i18n import tr, translator, LANG_NAMES
 from core.settings import settings
-from core.updater import UpdateChecker
 
 
 class SettingsPage(QWidget):
@@ -164,7 +163,82 @@ class SettingsPage(QWidget):
         root.addWidget(card_play)
 
         # ============================================================
-        #  ПЛИТКА 4: ПАПКА
+        #  ПЛИТКА 4: АУДИО-УСТРОЙСТВО  (НОВОЕ)
+        # ============================================================
+        card_audio = self._create_card()
+        lay_audio = QVBoxLayout(card_audio)
+        lay_audio.setContentsMargins(20, 20, 20, 20)
+        lay_audio.setSpacing(12)
+
+        self._audio_title = self._section_title(tr("settings.audio"))
+        lay_audio.addWidget(self._audio_title)
+
+        audio_row = QHBoxLayout()
+        self._audio_label = QLabel(settings().get_audio_device() or tr("settings.audio.none"))
+        self._audio_label.setStyleSheet("color: #A0A0AB; font-family: Consolas, monospace;")
+        audio_row.addWidget(self._audio_label, 1)
+
+        self._btn_audio = QPushButton(tr("settings.audio.pick"))
+        self._btn_audio.setObjectName("CtrlBtn")
+        self._btn_audio.clicked.connect(self._pick_audio)
+        audio_row.addWidget(self._btn_audio)
+        lay_audio.addLayout(audio_row)
+        root.addWidget(card_audio)
+
+        # ============================================================
+        #  ПЛИТКА 5: ГОРЯЧИЕ КЛАВИШИ  (НОВОЕ)
+        # ============================================================
+        card_hotkeys = self._create_card()
+        lay_hotkeys = QVBoxLayout(card_hotkeys)
+        lay_hotkeys.setContentsMargins(20, 20, 20, 20)
+        lay_hotkeys.setSpacing(12)
+
+        self._hotkeys_title = self._section_title(tr("settings.hotkeys"))
+        lay_hotkeys.addWidget(self._hotkeys_title)
+
+        hotkey_row = QHBoxLayout()
+        hotkey_hint = QLabel("Клик → откроется редактор")
+        hotkey_hint.setStyleSheet("color: #A0A0AB; font-size: 12px;")
+        hotkey_row.addWidget(hotkey_hint, 1)
+
+        self._btn_hotkeys = QPushButton(tr("settings.hotkeys.edit"))
+        self._btn_hotkeys.setObjectName("CtrlBtn")
+        self._btn_hotkeys.clicked.connect(self._open_hotkeys)
+        hotkey_row.addWidget(self._btn_hotkeys)
+        lay_hotkeys.addLayout(hotkey_row)
+        root.addWidget(card_hotkeys)
+
+        # ============================================================
+        #  ПЛИТКА 6: ПРОФИЛЬ  (НОВОЕ)
+        # ============================================================
+        card_profile = self._create_card()
+        lay_profile = QVBoxLayout(card_profile)
+        lay_profile.setContentsMargins(20, 20, 20, 20)
+        lay_profile.setSpacing(12)
+
+        self._profile_title = self._section_title(tr("settings.profile"))
+        lay_profile.addWidget(self._profile_title)
+
+        profile_hint = QLabel("Сохранить/загрузить все настройки в .scarly файл")
+        profile_hint.setStyleSheet("color: #A0A0AB; font-size: 12px;")
+        lay_profile.addWidget(profile_hint)
+
+        profile_row = QHBoxLayout()
+        self._btn_export = QPushButton(tr("settings.profile.export"))
+        self._btn_export.setObjectName("CtrlBtn")
+        self._btn_export.clicked.connect(self._export_profile)
+        profile_row.addWidget(self._btn_export)
+
+        self._btn_import = QPushButton(tr("settings.profile.import"))
+        self._btn_import.setObjectName("CtrlBtn")
+        self._btn_import.clicked.connect(self._import_profile)
+        profile_row.addWidget(self._btn_import)
+        profile_row.addStretch()
+        lay_profile.addLayout(profile_row)
+        root.addWidget(card_profile)
+
+        # ============================================================
+        #  ПЛИТКА 7: ПАПКА
         # ============================================================
         card_folder = self._create_card()
         lay_folder = QVBoxLayout(card_folder)
@@ -191,7 +265,7 @@ class SettingsPage(QWidget):
         root.addWidget(card_folder)
 
         # ============================================================
-        #  ПЛИТКА 5: КЭШ
+        #  ПЛИТКА 8: КЭШ
         # ============================================================
         card_cache = self._create_card()
         lay_cache = QVBoxLayout(card_cache)
@@ -213,37 +287,7 @@ class SettingsPage(QWidget):
         root.addWidget(card_cache)
 
         # ============================================================
-        #  ПЛИТКА 6: ОБНОВЛЕНИЯ (с бейджем «работает плохо»)
-        # ============================================================
-        card_upd = self._create_card()
-        lay_upd = QVBoxLayout(card_upd)
-        lay_upd.setContentsMargins(20, 20, 20, 20)
-        lay_upd.setSpacing(12)
-
-        # Заголовок + бейдж
-        upd_header = QHBoxLayout()
-        self._updates_title = QLabel(tr("settings.check_updates.title"))
-        self._updates_title.setStyleSheet("color: #F5F5F7; font-size: 16px; font-weight: 700;")
-        upd_header.addWidget(self._updates_title)
-
-        self._updates_badge = QLabel(tr("settings.check_updates.badge"))
-        self._updates_badge.setStyleSheet(
-            "background: #E53935; color: white; padding: 3px 10px; "
-            "border-radius: 10px; font-size: 11px; font-weight: 600;"
-        )
-        upd_header.addWidget(self._updates_badge)
-        upd_header.addStretch()
-        lay_upd.addLayout(upd_header)
-
-        self._btn_updates = QPushButton(tr("settings.check_updates"))
-        self._btn_updates.setObjectName("CtrlBtn")
-        self._btn_updates.clicked.connect(self._check_updates)
-        lay_upd.addWidget(self._btn_updates, alignment=Qt.AlignLeft)
-
-        root.addWidget(card_upd)
-
-        # ============================================================
-        #  ПЛИТКА 7: ОПАСНАЯ ЗОНА
+        #  ПЛИТКА 9: ОПАСНАЯ ЗОНА
         # ============================================================
         card_danger = self._create_card()
         lay_danger = QVBoxLayout(card_danger)
@@ -337,6 +381,28 @@ class SettingsPage(QWidget):
         settings().set_bg_video("")
         self.bgVideoChanged.emit()
 
+    def _pick_audio(self):
+        from ui.audio_selector import AudioSelectorDialog
+        dlg = AudioSelectorDialog(self)
+        if dlg.exec():
+            self._audio_label.setText(
+                settings().get_audio_device() or tr("settings.audio.none")
+            )
+
+    def _open_hotkeys(self):
+        from ui.hotkeys_dialog import HotkeysDialog
+        dlg = HotkeysDialog(self)
+        dlg.exec()
+
+    def _export_profile(self):
+        settings().export_profile(self)
+
+    def _import_profile(self):
+        if settings().import_profile(self):
+            self._refresh_labels()
+            translator().set_language(settings().get_language())
+            self.themeChanged.emit()
+
     def _pick_folder(self):
         path = QFileDialog.getExistingDirectory(
             self, tr("settings.folder"), settings().get_default_dir()
@@ -352,14 +418,10 @@ class SettingsPage(QWidget):
         self.defaultDirChanged.emit("")
 
     def _clear_cache(self):
-        removed = settings().clear_cache()
+        settings().clear_cache()
         self._cache_status.setText(tr("settings.cache.cleared"))
         from PySide6.QtCore import QTimer
         QTimer.singleShot(3000, lambda: self._cache_status.setText(""))
-
-    def _check_updates(self):
-        checker = UpdateChecker(self)
-        checker.check()
 
     def _confirm_reset(self):
         from PySide6.QtWidgets import QMessageBox
@@ -373,6 +435,9 @@ class SettingsPage(QWidget):
     def _refresh_labels(self):
         p = settings().get_default_dir()
         self._folder_label.setText(p if p else tr("settings.folder.none"))
+        self._audio_label.setText(
+            settings().get_audio_device() or tr("settings.audio.none")
+        )
 
     def retranslate(self, _lang: str = ""):
         self._lang_title.setText(tr("settings.lang"))
@@ -387,14 +452,18 @@ class SettingsPage(QWidget):
         self._btn_vbg_reset.setText(tr("settings.video_bg.reset"))
         self._remember_cb.setText(tr("settings.remember_position"))
         self._fps_cb.setText(tr("settings.fps_overlay"))
+        self._audio_title.setText(tr("settings.audio"))
+        self._btn_audio.setText(tr("settings.audio.pick"))
+        self._hotkeys_title.setText(tr("settings.hotkeys"))
+        self._btn_hotkeys.setText(tr("settings.hotkeys.edit"))
+        self._profile_title.setText(tr("settings.profile"))
+        self._btn_export.setText(tr("settings.profile.export"))
+        self._btn_import.setText(tr("settings.profile.import"))
         self._folder_title.setText(tr("settings.folder"))
         self._btn_folder_pick.setText(tr("settings.folder.pick"))
         self._btn_folder_reset.setText(tr("settings.folder.reset"))
         self._cache_title.setText(tr("settings.cache"))
         self._btn_cache.setText(tr("settings.cache.clear"))
-        self._updates_title.setText(tr("settings.check_updates.title"))
-        self._updates_badge.setText(tr("settings.check_updates.badge"))
-        self._btn_updates.setText(tr("settings.check_updates"))
         self._danger_title.setText(tr("settings.danger"))
         self._danger_desc.setText(tr("settings.reset.desc"))
         self._btn_reset.setText(tr("settings.reset.button"))

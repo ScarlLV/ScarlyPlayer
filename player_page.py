@@ -1,5 +1,5 @@
 # ui/player_page.py
-"""Страница плеера с пустым состоянием (Empty State)."""
+"""Страница плеера с пустым состоянием + каруселью плейлиста."""
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
@@ -11,6 +11,7 @@ from PySide6.QtMultimediaWidgets import QVideoWidget
 from core.i18n import tr, translator
 from core.icons import load_svg_icon
 from ui.control_panel import ControlPanel
+from ui.playlist_carousel import PlaylistCarousel
 
 
 class PlayerPage(QWidget):
@@ -22,6 +23,7 @@ class PlayerPage(QWidget):
     aspectChanged = Signal(str)
     fullscreenToggled = Signal()
     infoRequested = Signal()
+    carouselItemClicked = Signal(int)  # индекс в плейлисте
 
     def __init__(self):
         super().__init__()
@@ -31,9 +33,10 @@ class PlayerPage(QWidget):
     def _build_ui(self):
         root = QVBoxLayout(self)
         root.setContentsMargins(16, 16, 16, 0)
-        root.setSpacing(12)
+        root.setSpacing(8)
         self.setStyleSheet("background: transparent;")
 
+        # Видео-контейнер
         self._video_frame = QFrame()
         self._video_frame.setObjectName("VideoContainer")
         self._video_frame.setStyleSheet(
@@ -45,11 +48,9 @@ class PlayerPage(QWidget):
         self._stack = QStackedWidget()
         self._stack.setStyleSheet("background: transparent;")
 
-        # Страница 0: пустое состояние
         self._empty_widget = self._build_empty_state()
         self._stack.addWidget(self._empty_widget)
 
-        # Страница 1: видео
         self.video_widget = QVideoWidget()
         self._opacity = QGraphicsOpacityEffect(self.video_widget)
         self.video_widget.setGraphicsEffect(self._opacity)
@@ -58,7 +59,7 @@ class PlayerPage(QWidget):
 
         vf.addWidget(self._stack)
 
-        # ============ FPS-оверлей ============
+        # FPS-оверлей
         self.fps_label = QLabel(self._video_frame)
         self.fps_label.setText("")
         self.fps_label.setStyleSheet(
@@ -69,7 +70,7 @@ class PlayerPage(QWidget):
         self.fps_label.move(10, 10)
         self.fps_label.hide()
 
-        # ============ Индикатор буферизации ============
+        # Буферизация
         self.buffering_label = QLabel(self._video_frame)
         self.buffering_label.setText(tr("player.buffering"))
         self.buffering_label.setStyleSheet(
@@ -82,6 +83,12 @@ class PlayerPage(QWidget):
 
         root.addWidget(self._video_frame, 1)
 
+        # ============ КАРУСЕЛЬ ПЛЕЙЛИСТА ============
+        self.carousel = PlaylistCarousel()
+        self.carousel.itemClicked.connect(self.carouselItemClicked)
+        root.addWidget(self.carousel)
+
+        # Панель управления
         self.controls = ControlPanel()
         self.controls.fullscreenToggled.connect(self.fullscreenToggled)
         self.controls.infoRequested.connect(self.infoRequested)
@@ -155,13 +162,13 @@ class PlayerPage(QWidget):
 
     def show_empty(self):
         self._stack.setCurrentIndex(0)
+        self.carousel.hide()
 
     def show_video(self):
         self._stack.setCurrentIndex(1)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        # Перемещаем оверлеи при ресайзе
         if hasattr(self, "fps_label"):
             self.fps_label.move(10, 10)
         if hasattr(self, "buffering_label") and self.buffering_label.isVisible():
@@ -176,3 +183,4 @@ class PlayerPage(QWidget):
         self._empty_hint.setText(tr("empty.hint"))
         self._empty_btn.setText("  " + tr("empty.button"))
         self.buffering_label.setText(tr("player.buffering"))
+        self.carousel.retranslate()

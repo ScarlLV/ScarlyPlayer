@@ -2,7 +2,9 @@
 """Персистентные настройки ScarlyPlayer через QSettings."""
 
 from __future__ import annotations
+import hashlib
 import json
+import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -11,7 +13,6 @@ from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import QFileDialog, QMessageBox
 
 from core.i18n import tr
-
 
 ORG = "ScarlyPlayer"
 APP = "ScarlyPlayer"
@@ -24,7 +25,7 @@ class Settings:
     # ============================================================
     #  БАЗОВОЕ
     # ============================================================
-    def get_language(self, default: str = "ru") -> str:
+    def get_language(self, default: str = "en") -> str:
         return self._s.value("ui/language", default, type=str)
     def set_language(self, code: str):
         self._s.setValue("ui/language", code)
@@ -64,13 +65,14 @@ class Settings:
     def set_volume(self, value: int):
         self._s.setValue("audio/volume", int(value))
 
+    # ---- Аудио-устройство ----
     def get_audio_device(self) -> str:
         return self._s.value("audio/device", "", type=str)
     def set_audio_device(self, name: str):
         self._s.setValue("audio/device", name)
 
     # ============================================================
-    #  БИБЛИОТЕКА (с избранным и счётчиком просмотров)
+    #  БИБЛИОТЕКА
     # ============================================================
     def get_library(self) -> list[dict]:
         raw = self._s.value("library/files", [], type=list)
@@ -87,12 +89,13 @@ class Settings:
                     "last_watched": int(item.get("last_watched", 0)),
                     "title": str(item.get("title", "")),
                     "author": str(item.get("author", "")),
+                    "hash": str(item.get("hash", "")),
                 })
             elif isinstance(item, str) and item:
                 res.append({
                     "path": item, "tags": "", "favorite": False,
                     "watch_count": 0, "last_watched": 0,
-                    "title": "", "author": "",
+                    "title": "", "author": "", "hash": "",
                 })
         return res
 
@@ -102,13 +105,31 @@ class Settings:
     # ============================================================
     #  ХОТКЕИ
     # ============================================================
-    def get_hotkey(self, action: str, default: str) -> str:
+    DEFAULT_HOTKEYS = {
+        "play_pause":       "Space",
+        "seek_left":        "Left",
+        "seek_right":       "Right",
+        "seek_left_long":   "Shift+Left",
+        "seek_right_long":  "Shift+Right",
+        "fullscreen":       "F",
+        "exit_fullscreen":  "Esc",
+        "mute":             "M",
+        "open_file":        "Ctrl+O",
+    }
+
+    def get_hotkey(self, action: str) -> str:
+        default = self.DEFAULT_HOTKEYS.get(action, "")
         return self._s.value(f"hotkeys/{action}", default, type=str)
+
     def set_hotkey(self, action: str, key: str):
         self._s.setValue(f"hotkeys/{action}", key)
 
+    def reset_hotkeys(self):
+        for action in self.DEFAULT_HOTKEYS:
+            self._s.remove(f"hotkeys/{action}")
+
     # ============================================================
-    #  ПОЗИЦИИ (Продолжить просмотр)
+    #  ПОЗИЦИИ
     # ============================================================
     def get_remember_position(self) -> bool:
         return self._s.value("player/remember_position", True, type=bool)
@@ -128,7 +149,7 @@ class Settings:
             self._s.remove(f"player/pos/{path}")
 
     # ============================================================
-    #  FPS-ОВЕРЛЕЙ
+    #  FPS
     # ============================================================
     def get_fps_overlay(self) -> bool:
         return self._s.value("ui/fps_overlay", False, type=bool)
@@ -145,7 +166,7 @@ class Settings:
         self._s.setValue("stats/total_seconds", total)
 
     def increment_watch_count(self, path: str):
-        """Увеличивает счётчик просмотров видео."""
+        """Увеличивает счётчик просмотров видео и сохраняет дату."""
         import time
         lib = self.get_library()
         for item in lib:
@@ -155,30 +176,112 @@ class Settings:
                 break
         self.set_library(lib)
 
+    # ---- Статистика по дням (для графика) ----
+    def get_daily_stats(self) -> dict[str, int]:
+        """Возвращает {'2026-01-15': 3600, ...} — секунды по дням."""
+        raw = self._s.value("stats/daily", "", type=str)
+        if not raw:
+            return {}
+        try:
+            data = json.loads(raw)
+            if isinstance(data, dict):
+                return {str(k): int(v) for k, v in data.items()}
+            return {}
+        except Exception:
+            return {}
+
+    def add_daily_watch(self, seconds: int):
+        """Добавляет секунды к текущей дате."""
+        from datetime import datetime
+        today = datetime.now().strftime("%Y-%m-%d")
+        data = self.get_daily_stats()
+        data[today] = data.get(today, 0) + int(seconds)
+        # QSettings не умеет dict → сериализуем в JSON-строку
+        self._s.setValue("stats/daily", json.dumps(data, ensure_ascii=False))
+
+    def get_today_seconds(self) -> int:
+        from datetime import datetime
+        today = datetime.now().strftime("%Y-%m-%d")
+        return self.get_daily_stats().get(today, 0)
+
+    # ============================================================
+    #  ДУБЛИКАТЫ
+    # ============================================================
+    @staticmethod
+    def compute_hash(path: str, block_size: int = 65536) -> str:
+        """Быстрый MD5-хэш файла (только первые + последние блоки для скорости)."""
+        if not os.path.exists(path):
+            return ""
+        try:
+            size = os.path.getsize(path)
+            h = hashlib.md5()
+            with open(path, "rb") as f:
+                if size <= block_size * 2:
+                    h.update(f.read())
+                else:
+                    h.update(f.read(block_size))
+                    f.seek(-block_size, os.SEEK_END)
+                    h.update(f.read(block_size))
+            return h.hexdigest()
+        except Exception:
+            return ""
+
+    def update_library_hashes(self) -> int:
+        """Проставляет хэши для видео без них. Возвращает кол-во обновлённых."""
+        lib = self.get_library()
+        updated = 0
+        for item in lib:
+            if not item.get("hash") and os.path.exists(item["path"]):
+                item["hash"] = self.compute_hash(item["path"])
+                if item["hash"]:
+                    updated += 1
+        if updated:
+            self.set_library(lib)
+        return updated
+
+    def find_duplicates(self) -> dict[str, list[dict]]:
+        """Группирует видео по хэшу. Возвращает только группы с >1 файлом."""
+        lib = self.get_library()
+        groups: dict[str, list[dict]] = {}
+        for item in lib:
+            h = item.get("hash", "")
+            if not h:
+                continue
+            groups.setdefault(h, []).append(item)
+        return {h: items for h, items in groups.items() if len(items) > 1}
+
     # ============================================================
     #  СБРОС / ПРОФИЛИ
     # ============================================================
     def reset_all(self):
         self._s.clear()
 
-    def export_profile(self, parent_widget):
+    def export_profile(self, parent_widget) -> bool:
         path, _ = QFileDialog.getSaveFileName(
             parent_widget, tr("dialog.export"), "profile.scarly", tr("dialog.scarly")
         )
         if not path:
-            return
+            return False
         data = {
+            "version": 1,
             "language": self.get_language(),
             "theme": self.get_theme(),
             "accent": self.get_accent_color(),
             "bg": self.get_bg_image(),
+            "bg_video": self.get_bg_video(),
             "volume": self.get_volume(),
             "audio": self.get_audio_device(),
             "library": self.get_library(),
+            "hotkeys": {k: self.get_hotkey(k) for k in self.DEFAULT_HOTKEYS},
         }
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
-        QMessageBox.information(parent_widget, tr("dialog.export"), "Профиль сохранён!")
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=4)
+            QMessageBox.information(parent_widget, tr("dialog.export"), "Профиль сохранён!")
+            return True
+        except Exception as e:
+            QMessageBox.warning(parent_widget, tr("dialog.export"), f"Ошибка: {e}")
+            return False
 
     def import_profile(self, parent_widget) -> bool:
         path, _ = QFileDialog.getOpenFileName(
@@ -189,13 +292,16 @@ class Settings:
         try:
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            self.set_language(data.get("language", "ru"))
+            self.set_language(data.get("language", "en"))
             self.set_theme(data.get("theme", "dark"))
             self.set_accent_color(data.get("accent", "#E53935"))
             self.set_bg_image(data.get("bg", ""))
+            self.set_bg_video(data.get("bg_video", ""))
             self.set_volume(data.get("volume", 80))
             self.set_audio_device(data.get("audio", ""))
             self.set_library(data.get("library", []))
+            for k, v in data.get("hotkeys", {}).items():
+                self.set_hotkey(k, v)
             QMessageBox.information(parent_widget, tr("dialog.import"), "Профиль загружен!")
             return True
         except Exception as e:
@@ -206,13 +312,10 @@ class Settings:
     #  КЭШ
     # ============================================================
     def clear_cache(self) -> int:
-        """Очищает временные файлы. Возвращает кол-во удалённых."""
         removed = 0
-        # Временная папка PyInstaller (если onefile)
-        import sys, os
+        import sys
         if hasattr(sys, "_MEIPASS"):
-            return 0  # не трогаем .exe изнутри
-        # Папка temp приложения
+            return 0
         app_temp = Path(tempfile.gettempdir()) / "ScarlyPlayer"
         if app_temp.exists():
             try:
